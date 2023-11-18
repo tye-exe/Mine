@@ -10,7 +10,7 @@ public final class Mine extends JavaPlugin {
 public void onEnable() {
     // Plugin startup logic
 
-
+    Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());
 }
 
 @Override
