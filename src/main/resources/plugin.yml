@@ -1,0 +1,10 @@
+name: Mine
+version: '${version}'
+main: me.tye.mine.Mine
+api-version: '1.20'
+
+commands:
+  mine:
+    permission: op
+    aliases:
+      - .
