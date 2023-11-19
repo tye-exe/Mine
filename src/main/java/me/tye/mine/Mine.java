@@ -10,7 +10,12 @@ public final class Mine extends JavaPlugin {
 public void onEnable() {
     // Plugin startup logic
 
+    //Commands
     Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());
+    Objects.requireNonNull(getCommand("mine")).setTabCompleter(new TabComplete());
+
+    //Events
+    getServer().getPluginManager().registerEvents(new PlayerClick(), this);
 }
 
 @Override
