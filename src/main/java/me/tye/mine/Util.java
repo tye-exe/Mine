@@ -24,6 +24,13 @@ public static NamespacedKey identifierKey = new NamespacedKey(plugin, "identifie
 public static Material pointer = Material.WOODEN_SWORD;
 
 
+/**
+ Sets some attributes of a new item in one method.
+ * @param material The material of the new item.
+ * @param displayName The display name of the item.
+ * @param identifier The identifier of an item. This is used to uniquely identify types of items inside of Mine!.
+ * @return A new item with the set properties.
+ */
 public static ItemStack itemProperties(Material material, String displayName, String identifier) {
   ItemStack itemStack = new ItemStack(material);
   ItemMeta itemMeta = itemStack.getItemMeta();
@@ -35,7 +42,13 @@ public static ItemStack itemProperties(Material material, String displayName, St
   return itemStack;
 }
 
-public static String getIdentity(ItemStack item) {
+/**
+ * @param item The item to get the identifier from.
+ * @return The identifier of an item, or an empty string is none is found.
+ */
+public static String getIdentifier(@Nullable ItemStack item) {
+  if (item == null) return "";
+
   ItemMeta itemMeta = item.getItemMeta();
   if (itemMeta == null) return "";
 
@@ -46,14 +59,15 @@ public static String getIdentity(ItemStack item) {
 }
 
 
+
 /**
  Checks if any items in a player inventory contains the given identifier.
  @param inv        The players inventory to check.
  @param identifier The give identifier.
  @return True if the inventory has an item with this identifier, false otherwise. */
-public static boolean inventoryContainsIdentity(PlayerInventory inv, String identifier) {
+public static boolean inventoryContainsIdentifier(PlayerInventory inv, String identifier) {
   for (ItemStack itemStack : inv) {
-    String itemIdentity = getIdentity(itemStack);
+    String itemIdentity = getIdentifier(itemStack);
 
     if (itemIdentity.isEmpty()) continue;
     if (!itemIdentity.equals(identifier)) continue;
@@ -61,6 +75,24 @@ public static boolean inventoryContainsIdentity(PlayerInventory inv, String iden
     return true;
   }
   return false;
+}
+
+/**
+ Deletes an item in a players inventory if it has the given identifier.
+ * @param inv The inventory to remove the item from.
+ * @param identifier The identifier of items to remove from the inventory.
+ */
+public static void deleteItemByIdentifier(PlayerInventory inv, String identifier) {
+  for (int i = 0; i < inv.getSize(); i++) {
+    ItemStack item = inv.getItem(i);
+
+    if (item == null) continue;
+
+    String foundIdentifier = getIdentifier(item);
+    if (!foundIdentifier.equals(identifier)) continue;
+
+    inv.setItem(i, new ItemStack(Material.AIR));
+  }
 }
 
 

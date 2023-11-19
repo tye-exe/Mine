@@ -25,7 +25,7 @@ private void givePointer(CommandSender sender) {
   if (sender instanceof Player player) {
 
     ItemStack pointer = itemProperties(Util.pointer, "Pointer", "pointer");
-    if (Util.inventoryContainsIdententity(player.getInventory(), "pointer")) return;
+    if (Util.inventoryContainsIdentifier(player.getInventory(), "pointer")) return;
 
     player.getInventory().addItem(pointer);
   }

@@ -25,7 +25,7 @@ public static void playerClick(PlayerInteractEvent e) {
   Player player = e.getPlayer();
 
   ItemStack heldItem = player.getInventory().getItemInMainHand();
-  String identity = getIdentity(heldItem);
+  String identity = getIdentifier(heldItem);
   if (identity.isEmpty()) return;
 
   if (identity.equals("pointer")) {
