@@ -51,16 +51,12 @@ public static String getIdentity(ItemStack item) {
  @param inv        The players inventory to check.
  @param identifier The give identifier.
  @return True if the inventory has an item with this identifier, false otherwise. */
-public static boolean inventoryContainsIdententity(PlayerInventory inv, String identifier) {
+public static boolean inventoryContainsIdentity(PlayerInventory inv, String identifier) {
   for (ItemStack itemStack : inv) {
-    if (itemStack == null) continue;
+    String itemIdentity = getIdentity(itemStack);
 
-    ItemMeta itemMeta = itemStack.getItemMeta();
-    if (itemMeta == null) continue;
-
-    String foundIdent = itemMeta.getPersistentDataContainer().get(identifierKey, PersistentDataType.STRING);
-    if (foundIdent == null) continue;
-    if (!foundIdent.equals(identifier)) continue;
+    if (itemIdentity.isEmpty()) continue;
+    if (!itemIdentity.equals(identifier)) continue;
 
     return true;
   }
@@ -73,7 +69,7 @@ public static boolean inventoryContainsIdententity(PlayerInventory inv, String i
  * @param item The item to check if it is from Mine.
  * @return True if it is from Mine.
  */
-public static boolean mineItem(ItemStack item) {
+public static boolean isMineItem(ItemStack item) {
   ItemMeta itemMeta = item.getItemMeta();
   if (itemMeta == null) return false;
 
