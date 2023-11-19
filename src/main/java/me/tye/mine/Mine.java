@@ -4,6 +4,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
 
+import static me.tye.mine.PlayerClick.selections;
+
 public final class Mine extends JavaPlugin {
 
 @Override
@@ -21,5 +23,8 @@ public void onEnable() {
 @Override
 public void onDisable() {
     // Plugin shutdown logic
+
+    //Reload support - If a reload happens when blocks are selected then they are restored.
+    selections.values().forEach((Selection::restore));
 }
 }

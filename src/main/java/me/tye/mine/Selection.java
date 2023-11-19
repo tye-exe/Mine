@@ -85,6 +85,9 @@ public boolean hasSetStartLocation() {
   return endLoc.getY() != Double.MAX_VALUE;
 }
 
+/**
+ Changes all the blocks selected by a player to the server-side state.
+ */
 public void restore() {
   restoreBlocks(getStartLoc());
   restoreBlocks(getEndLoc());
