@@ -40,9 +40,7 @@ public static String getIdentity(ItemStack item) {
   if (itemMeta == null) return "";
 
   String identifier = itemMeta.getPersistentDataContainer().get(identifierKey, PersistentDataType.STRING);
-  if (identifier == null) {
-    identifier = "";
-  }
+  if (identifier == null) return  "";
 
   return identifier;
 }
