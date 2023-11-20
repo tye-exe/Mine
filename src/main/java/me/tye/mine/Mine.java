@@ -18,6 +18,8 @@ public void onEnable() {
 
     //Events
     getServer().getPluginManager().registerEvents(new PlayerClick(), this);
+    getServer().getPluginManager().registerEvents(new PlayerDrop(), this);
+
 }
 
 @Override
