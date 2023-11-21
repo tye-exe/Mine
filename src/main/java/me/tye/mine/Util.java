@@ -16,7 +16,10 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,12 +41,17 @@ public static Long dropRetryInterval = 500L;
  * @param identifier The identifier of an item. This is used to uniquely identify types of items inside of Mine!.
  * @return A new item with the set properties.
  */
-public static ItemStack itemProperties(Material material, String displayName, String identifier) {
+public static @NotNull ItemStack itemProperties(@NotNull Material material, @Nullable String displayName, @Nullable String identifier) {
   ItemStack itemStack = new ItemStack(material);
   ItemMeta itemMeta = itemStack.getItemMeta();
 
-  itemMeta.displayName(Component.text(displayName).color(Colours.Green));
-  itemMeta.getPersistentDataContainer().set(identifierKey, PersistentDataType.STRING, identifier);
+  if (displayName != null) {
+    itemMeta.displayName(Component.text(displayName).color(Colours.Green));
+  }
+
+  if (identifier != null) {
+    itemMeta.getPersistentDataContainer().set(identifierKey, PersistentDataType.STRING, identifier);
+  }
 
   itemStack.setItemMeta(itemMeta);
   return itemStack;
@@ -53,7 +61,7 @@ public static ItemStack itemProperties(Material material, String displayName, St
  * @param item The item to get the identifier from.
  * @return The identifier of an item, or an empty string is none is found.
  */
-public static String getIdentifier(@Nullable ItemStack item) {
+public static @NotNull String getIdentifier(@Nullable ItemStack item) {
   if (item == null) return "";
 
   ItemMeta itemMeta = item.getItemMeta();
@@ -72,7 +80,7 @@ public static String getIdentifier(@Nullable ItemStack item) {
  @param inv        The players inventory to check.
  @param identifier The give identifier.
  @return True if the inventory has an item with this identifier, false otherwise. */
-public static boolean inventoryContainsIdentifier(PlayerInventory inv, String identifier) {
+public static boolean inventoryContainsIdentifier(@NotNull PlayerInventory inv, @Nullable String identifier) {
   for (ItemStack itemStack : inv) {
     String itemIdentity = getIdentifier(itemStack);
 
@@ -89,7 +97,7 @@ public static boolean inventoryContainsIdentifier(PlayerInventory inv, String id
  * @param inv The inventory to remove the item from.
  * @param identifier The identifier of items to remove from the inventory.
  */
-public static void deleteItemByIdentifier(PlayerInventory inv, String identifier) {
+public static void deleteItemByIdentifier(@NotNull PlayerInventory inv, @Nullable String identifier) {
   for (int i = 0; i < inv.getSize(); i++) {
     ItemStack item = inv.getItem(i);
 
@@ -108,7 +116,9 @@ public static void deleteItemByIdentifier(PlayerInventory inv, String identifier
  * @param item The item to check if it is from Mine.
  * @return True if it is from Mine.
  */
-public static boolean isMineItem(ItemStack item) {
+public static boolean isMineItem(@Nullable ItemStack item) {
+  if (item == null) return false;
+
   ItemMeta itemMeta = item.getItemMeta();
   if (itemMeta == null) return false;
 
@@ -155,14 +165,14 @@ private static HashMap<String,Object> config = new HashMap<>();
 /**
  Sets the lang responses the to the given HashMap.
  @param lang New lang map. */
-public static void setLang(HashMap<String,Object> lang) {
+public static void setLang(@Nullable HashMap<String,Object> lang) {
   Util.lang = getKeysRecursive(lang);
 }
 
 /**
  Sets the config responses to the given HashMap.
  @param config New config map. */
-public static void setConfig(HashMap<String,Object> config) {
+public static void setConfig(@Nullable HashMap<String,Object> config) {
   Util.config = getKeysRecursive(config);
 }
 
@@ -185,6 +195,7 @@ public static @NotNull HashMap<String,Object> getKeysRecursive(@Nullable Map<?,?
     }
 
   }
+
   return map;
 }
 
@@ -256,6 +267,7 @@ public static @NotNull String getLang(@NotNull String key, @Nullable String... r
   for (int i = 0; i <= replace.length-1; i += 2) {
     if (replace[i+1] == null) continue;
 
+
     rawResponse = rawResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
   }
 
@@ -268,7 +280,7 @@ public static @NotNull String getLang(@NotNull String key, @Nullable String... r
  If no external value can be found it will fall back onto the default internal value. If there is still no value it will return true and log a severe error.
  @param key Key for the config to get the value of.
  @return The value from the file. */
-public static Object getConfig(String key) {
+public static @Nullable Object getConfig(@NotNull String key) {
   Object response;
 
   //if config doesn't contain the key it checks if it is present in default config files.
@@ -297,44 +309,46 @@ public static Object getConfig(String key) {
   }
 
   log.warning(getLang("exceptions.noConfigMatch", "key", key));
-  return Boolean.TRUE;
+  return null;
 }
 
 
 /**
  @param filepath Path to the file inside the resource folder.
  @return The default YAML values of the resource. */
-public static HashMap<String,Object> getDefault(String filepath) {
-  InputStream is = plugin.getResource(filepath);
-  if (is != null)
-    return new Yaml().load(is);
-  return new HashMap<>();
+public static @NotNull HashMap<String,Object> getDefault(@Nullable String filepath) {
+  if (filepath == null) return new HashMap<>();
+
+  InputStream resourceInputSteam = plugin.getResource(filepath);
+  if (resourceInputSteam == null) return new HashMap<>();
+
+  return new Yaml().load(resourceInputSteam);
 }
 
 /**
- Copies the content of an internal file to an external one.
+ Copies the content of an internal file to a new external one.
  @param file     External file destination
- @param resource Input stream for the data to write, or null if target is an empty file/dir. */
-public static void createFile(File file, @Nullable InputStream resource, boolean isFile) {
-  if (file.exists())
-    return;
+ @param resource Input stream for the data to write, or null if target is an empty file/dir.
+ @param isFile Set to true to create a file. Set to false to create a dir.*/
+public static void createFile(@NotNull File file, @Nullable InputStream resource, boolean isFile) {
+  if (file.exists()) return;
 
   try {
     if (isFile) {
-      if (!file.createNewFile())
-        throw new IOException();
+      if (!file.createNewFile()) throw new IOException();
     }
-    else if (!file.mkdir())
-      throw new IOException();
+    else {
+      if (!file.mkdir()) throw new IOException();
+    }
 
     if (resource != null) {
-      String text = new String(Objects.requireNonNull(resource).readAllBytes());
+      String text = new String(resource.readAllBytes());
       FileWriter fw = new FileWriter(file);
       fw.write(text);
       fw.close();
     }
 
-  } catch (IOException | NullPointerException e) {
+  } catch (IOException e) {
     log.log(Level.WARNING, getLang("exceptions.fileCreation", "filePath", file.getAbsolutePath()), e);
   }
 }
@@ -345,7 +359,7 @@ public static void createFile(File file, @Nullable InputStream resource, boolean
  @param externalFile External config file.
  @param resourcePath Path to the internal file from the resource folder.
  @return The data from the external file with any missing values being loaded in as defaults. */
-public static HashMap<String,Object> returnFileConfigs(File externalFile, String resourcePath) {
+public static @NotNull HashMap<String,Object> returnFileConfigs(@NotNull File externalFile, @Nullable String resourcePath) {
   HashMap<String,Object> loadedValues;
 
   try {
@@ -353,29 +367,31 @@ public static HashMap<String,Object> returnFileConfigs(File externalFile, String
     FileReader fr = new FileReader(externalFile);
     HashMap<String,Object> unformattedloadedValues = new Yaml().load(fr);
     fr.close();
-    if (unformattedloadedValues == null)
+
+    if (unformattedloadedValues == null) {
       unformattedloadedValues = new HashMap<>();
+    }
 
     loadedValues = getKeysRecursive(unformattedloadedValues);
     HashMap<String,Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
 
     //checks if there is a key missing in the file
-    if (loadedValues.keySet().containsAll(defaultValues.keySet()))
-      return loadedValues;
+    if (loadedValues.keySet().containsAll(defaultValues.keySet())) return loadedValues;
+    assert resourcePath != null;
 
     //gets the missing keys
     HashMap<String,Object> missing = new HashMap<>();
     for (String key : defaultValues.keySet()) {
-      if (loadedValues.containsKey(key))
-        continue;
+      if (loadedValues.containsKey(key)) continue;
+
       missing.put(key, defaultValues.get(key));
     }
 
     StringBuilder toAppend = new StringBuilder();
-    InputStream is = plugin.getResource(resourcePath);
-    if (is == null)
-      return new HashMap<>();
-    Object[] internalFileText = new String(Objects.requireNonNull(is).readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
+    InputStream resourceInputStream = plugin.getResource(resourcePath);
+    if (resourceInputStream == null) return new HashMap<>();
+
+    Object[] internalFileText = new String(resourceInputStream.readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
 
 
     //appends the missing keys with default values and comments that are above them in the default file.
@@ -383,22 +399,27 @@ public static HashMap<String,Object> returnFileConfigs(File externalFile, String
       toAppend.append("\n");
 
       if (missingKey.contains(".")) {
-        toAppend.append(missingKey).append(": \"").append(defaultValues.get(missingKey).toString().replace("\"", "\\\"")).append("\"");
-      } else {
-        //searches though internal file to retrieve keys, values,  & comments
+        toAppend.append(missingKey).append(": \"")
+                .append(defaultValues.get(missingKey).toString().replace("\"", "\\\""))
+                .append("\"");
+      }
+      else {
+        //searches though internal file to retrieve keys, values, & comments
         for (int i = 0; i < internalFileText.length; i++) {
-          if (!internalFileText[i].toString().startsWith(missingKey))
-            continue;
+          if (!internalFileText[i].toString().startsWith(missingKey)) continue;
+
           //search up for start of comments
           int ii = 0;
           while (i+ii-1 > 0 && internalFileText[i+ii-1].toString().startsWith("#")) {
             ii--;
           }
+
           //appends all of the comments in correct order
           while (ii < 0) {
             toAppend.append(internalFileText[i+ii]).append("\n");
             ii++;
           }
+
           toAppend.append(internalFileText[i].toString());
         }
       }
@@ -412,15 +433,17 @@ public static HashMap<String,Object> returnFileConfigs(File externalFile, String
       fw.write(toAppend.toString());
       fw.close();
     }
+
   } catch (Exception e) {
     loadedValues = getKeysRecursive(getDefault(resourcePath));
 
-    if (resourcePath.equals("config.yml")) {
+    if (resourcePath != null && resourcePath.equals("config.yml")) {
       Util.setConfig(getDefault(resourcePath));
     }
 
     log.log(Level.SEVERE, getLang("exceptions.errorWritingConfigs", "filePath", externalFile.getAbsolutePath()), e);
   }
+
   return loadedValues;
 }
 }
