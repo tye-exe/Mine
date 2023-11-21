@@ -7,16 +7,17 @@ import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.UUID;
 
-import static me.tye.mine.Util.getSurrounding;
+import static me.tye.mine.utils.Util.getSurrounding;
 
 public class Selection {
 
+public static final HashMap<UUID, Selection> selections = new HashMap<>();
 private final UUID playerID;
 
 private Location startLoc = new Location(Bukkit.getWorlds().get(0), 0, Double.MAX_VALUE, 0);
@@ -33,7 +34,7 @@ public Selection(@NotNull UUID playerID) {
  Moves the end location to a list of selected positions. And sets the given location to be the end location.
  * @param selectedLocation The given location.
  */
-public void add(@Nullable Location selectedLocation) {
+public void add(@NotNull Location selectedLocation) {
   selected.add(endLoc);
   setEndLoc(selectedLocation);
 }
@@ -63,7 +64,7 @@ public @NotNull Selection setLocation(@NotNull Location location, @NotNull Actio
  Checks if a location has been set or not.<br>
  <br>
  The method works by checking if the location has a y of Double.MAX_VALUE. As the locations are initialized with a y of that value.
- * @param action The action the user is performing. This will effect whether the start location is checked or the end location is checked.
+ * @param action The action the user is performing. This will affect whether the start location is checked or the end location is checked.
  * @return True if the determined location has been set.
  */
 public boolean hasSetLocation(@NotNull Action action) {
@@ -89,11 +90,11 @@ public boolean hasSetStartLocation() {
  Changes all the blocks selected by a player to the server-side state.
  */
 public void restore() {
-  restoreBlocks(getStartLoc());
-  restoreBlocks(getEndLoc());
+  restoreBlocks(getStartLoc(), true);
+  restoreBlocks(getEndLoc(), true);
 
   for (Location restoreLocation : selected) {
-    restoreBlocks(restoreLocation);
+    restoreBlocks(restoreLocation, true);
   }
 }
 
@@ -106,30 +107,40 @@ public @NotNull Location getStartLoc() {
 }
 
 public void setStartLoc(@NotNull Location startLoc) {
-  restoreBlocks(this.startLoc);
+  restoreBlocks(this.startLoc, false);
   this.startLoc = startLoc;
 }
 
 public void setEndLoc(@NotNull Location endLoc) {
-  restoreBlocks(this.endLoc);
+  restoreBlocks(this.endLoc, false);
   this.endLoc = endLoc;
 }
 
 /**
  Resends the block data of a three by three area centered on the given location to the client.
  * @param locationToRestore The given location.
+ * @param includeAdjacentSelected If set to true then all blocks will be resent.<br>
+ *                          If set to false then adjacent selection blocks won't be resent.
  */
-private void restoreBlocks(@NotNull Location locationToRestore) {
+private void restoreBlocks(@NotNull Location locationToRestore, boolean includeAdjacentSelected) {
   Player player = Bukkit.getPlayer(playerID);
   if (player == null) return;
 
   Collection<BlockState> restoreBlocks = new ArrayList<>();
 
   for (Block block : getSurrounding(locationToRestore.getBlock(), null)) {
+
+
+    if (!includeAdjacentSelected) {
+      if (block.getLocation().equals(getStartLoc())
+          || block.getLocation().equals(getEndLoc())) continue;
+    }
+
     restoreBlocks.add(block.getState());
   }
 
   restoreBlocks.add(locationToRestore.getBlock().getState());
+
   player.sendBlockChanges(restoreBlocks);
 }
 }

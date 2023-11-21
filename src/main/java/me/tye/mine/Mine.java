@@ -2,15 +2,22 @@ package me.tye.mine;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.Objects;
 
-import static me.tye.mine.PlayerClick.selections;
+import static me.tye.mine.Selection.selections;
+import static me.tye.mine.utils.Util.*;
 
 public final class Mine extends JavaPlugin {
 
 @Override
 public void onEnable() {
     // Plugin startup logic
+
+    //Creates config folders & files.
+    createFile(dataFolder, null, false);
+    createFile(configFile, plugin.getResource("config.yml"), true);
+    createFile(new File(langFolder + File.separator + "eng.yml"), plugin.getResource("config.yml"), true);
 
     //Commands
     Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());

@@ -1,5 +1,7 @@
 package me.tye.mine;
 
+import me.tye.mine.utils.Identifier;
+import me.tye.mine.utils.Sounds;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -10,9 +12,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.UUID;
 
-import static me.tye.mine.PlayerClick.selections;
-import static me.tye.mine.Util.dropRetryInterval;
-import static me.tye.mine.Util.getIdentifier;
+import static me.tye.mine.Selection.selections;
+import static me.tye.mine.utils.Util.*;
+
 public class PlayerDrop implements Listener {
 
 @EventHandler
@@ -24,7 +26,7 @@ public static void playerDrop(PlayerDropItemEvent e) {
     return;
   }
 
-  if (Util.isMineItem(droppedItem.getItemStack())) {
+  if (Identifier.isMineItem(droppedItem.getItemStack())) {
     e.setCancelled(true);
   }
 }
@@ -39,27 +41,42 @@ public static HashMap<UUID, Long> pointerDrop = new HashMap<>();
  @param droppedItem The item to drop.
  @param player      The player who is dropping the item. */
 private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player player) {
-  if (!getIdentifier(droppedItem.getItemStack()).equals("pointer")) return false;
+  if (!Identifier.getIdentifier(droppedItem.getItemStack()).equals("pointer")) return false;
 
-  if (!pointerDrop.containsKey(player.getUniqueId())) {
-    pointerDrop.put(player.getUniqueId(), System.currentTimeMillis());
+  UUID playerId = player.getUniqueId();
+
+  if (!selections.containsKey(playerId)) {
+    player.sendMessage(getLang("pointer.missingSelection"));
     return false;
   }
 
-  Long lastDropAttempt = pointerDrop.get(player.getUniqueId());
+  Selection selection = selections.get(playerId);
+  if (!(selection.hasSetStartLocation() && selection.hasSetEndLocation())) {
+    player.sendMessage(getLang("pointer.missingSelection"));
+    return false;
+  }
+
+
+  if (!pointerDrop.containsKey(playerId)) {
+    pointerDrop.put(playerId, System.currentTimeMillis());
+    player.sendMessage(getLang("pointer.confirmSelection"));
+    return false;
+  }
+
+  Long lastDropAttempt = pointerDrop.get(playerId);
 
   if (System.currentTimeMillis() - dropRetryInterval > lastDropAttempt) {
-    pointerDrop.put(player.getUniqueId(), System.currentTimeMillis());
+    pointerDrop.put(playerId, System.currentTimeMillis());
+    player.sendMessage(getLang("pointer.confirmSelection"));
     return false;
   }
 
-  pointerDrop.remove(player.getUniqueId());
+  selections.remove(playerId).restore();
+  pointerDrop.remove(playerId);
   droppedItem.remove();
 
-  if (selections.containsKey(player.getUniqueId())) {
-    selections.remove(player.getUniqueId()).restore();
-  }
 
+  Sounds.confirm(player);
   return true;
 }
 }

@@ -26,15 +26,47 @@ import java.util.logging.Logger;
 
 public class Util {
 
-public static JavaPlugin plugin = JavaPlugin.getPlugin(Mine.class);
+/**
+ This plugin.
+ */
+public static final JavaPlugin plugin = JavaPlugin.getPlugin(Mine.class);
 
-public static File dataFolder = plugin.getDataFolder();
 
-public static Logger log = plugin.getLogger();
-public static NamespacedKey identifierKey = new NamespacedKey(plugin, "identifier");
+/**
+ The data folder.
+ */
+public static final File dataFolder = plugin.getDataFolder();
 
-public static Material pointer = Material.WOODEN_SWORD;
-public static Long dropRetryInterval = 500L;
+/**
+ The config file for this plugin.
+ */
+public static final File configFile = new File(dataFolder.toPath() + File.separator + "config.yml");
+
+/**
+ The lang folder for this plugin.
+ */
+public static File langFolder = new File(dataFolder.toPath() + File.separator + "langFiles");
+
+
+/**
+ The logger for this plugin.
+ */
+public static final Logger log = plugin.getLogger();
+
+/**
+ The NamespacedKey for "Mine.identifier".
+ */
+public static final NamespacedKey identifierKey = new NamespacedKey(plugin, "identifier");
+
+/**
+ The material the pointer item should be.
+ */
+public static final Material pointer = Material.WOODEN_SWORD;
+
+/**
+ How quickly the pointer has to be dropped in succession for a confirmation of a selection. (In milliseconds).
+ */
+public static final Long dropRetryInterval = 500L;
 
 
 /**

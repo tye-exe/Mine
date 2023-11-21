@@ -1,5 +1,6 @@
 package me.tye.mine;
 
+import me.tye.mine.utils.Identifier;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -12,21 +13,16 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.UUID;
-
-import static me.tye.mine.Util.*;
+import static me.tye.mine.utils.Util.*;
 
 public class PlayerClick implements Listener {
-
-public static final HashMap<UUID, Selection> selections = new HashMap<>();
 
 @EventHandler
 public static void playerClick(PlayerInteractEvent e) {
   Player player = e.getPlayer();
 
   ItemStack heldItem = player.getInventory().getItemInMainHand();
-  String identity = getIdentifier(heldItem);
+  String identity = Identifier.getIdentifier(heldItem);
   if (identity.isEmpty()) return;
 
   if (identity.equals("pointer")) {
@@ -45,11 +41,11 @@ private static void select(@NotNull PlayerInteractEvent e) {
 
 
   Selection selected = new Selection(player.getUniqueId());
-  if (selections.containsKey(player.getUniqueId())) {
-    selected = selections.get(player.getUniqueId());
+  if (Selection.selections.containsKey(player.getUniqueId())) {
+    selected = Selection.selections.get(player.getUniqueId());
   }
 
-  selections.put(player.getUniqueId(), selected.setLocation(clickedBlock.getLocation(), action));
+  Selection.selections.put(player.getUniqueId(), selected.setLocation(clickedBlock.getLocation(), action));
 
 
   //if the block is the same then use secondary
