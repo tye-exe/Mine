@@ -203,28 +203,32 @@ public static @NotNull String getLang(@NotNull String key, @Nullable String... r
   //if config doesn't contain the key it falls back to the built-in one.
   if (rawResponse.equals("null")) {
 
-    InputStream defultLandInputStream = plugin.getResource("langFiles/"+getConfig("lang")+".yml");
     HashMap<String,Object> defaultLang;
 
-    //falls back to the eng lang file if the one for the selected lang couldn't be found
-    if (defultLandInputStream == null) {
-      defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/eng.yml")));
-    }
-    else {
+    //if the key equals lang then no path to a lang file can be found, so it falls back to english
+    if (!key.equals("lang")) {
+      InputStream defultLandInputStream = plugin.getResource("langFiles/"+getConfig("lang")+".yml");
       defaultLang = getKeysRecursive(new Yaml().load(defultLandInputStream));
     }
+    else {
+      //falls back to the eng lang file if the one for the selected lang couldn't be found
+      defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/eng.yml")));
+    }
+
 
     rawResponse = String.valueOf(defaultLang.get(key));
 
+    //if the key still doesn't exist then error text is returned
     if (rawResponse.equals("null")) {
 
       if (key.equals("exceptions.noSuchResponse")) {
-        return "Unable to get key \"lang.noSuchResponse\" from lang file. This message is in english to prevent a stack overflow error.";
+        return "Unable to find key \""+key+"\" in any lang files.\nThis message is in english to prevent a stack overflow error.";
       }
       else {
         rawResponse = getLang("exceptions.noSuchResponse", "key", key);
       }
     }
+
     else {
       lang.put(key, defaultLang.get(key));
     }
