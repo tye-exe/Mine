@@ -21,7 +21,7 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
   return true;
 }
 
-private void givePointer(CommandSender sender) {
+private void givePointer(@NotNull CommandSender sender) {
   if (sender instanceof Player player) {
 
     ItemStack pointer = itemProperties(Util.pointer, "Pointer", "pointer");

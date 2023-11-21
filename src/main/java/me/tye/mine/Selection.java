@@ -25,7 +25,7 @@ private Location endLoc = new Location(Bukkit.getWorlds().get(0), 0, Double.MAX_
 private final ArrayList<Location> selected = new ArrayList<>();
 
 
-public Selection(UUID playerID) {
+public Selection(@NotNull UUID playerID) {
   this.playerID = playerID;
 }
 
@@ -105,12 +105,12 @@ public @NotNull Location getStartLoc() {
   return startLoc;
 }
 
-public void setStartLoc(Location startLoc) {
+public void setStartLoc(@NotNull Location startLoc) {
   restoreBlocks(this.startLoc);
   this.startLoc = startLoc;
 }
 
-public void setEndLoc(Location endLoc) {
+public void setEndLoc(@NotNull Location endLoc) {
   restoreBlocks(this.endLoc);
   this.endLoc = endLoc;
 }
@@ -119,7 +119,7 @@ public void setEndLoc(Location endLoc) {
  Resends the block data of a three by three area centered on the given location to the client.
  * @param locationToRestore The given location.
  */
-private void restoreBlocks(Location locationToRestore) {
+private void restoreBlocks(@NotNull Location locationToRestore) {
   Player player = Bukkit.getPlayer(playerID);
   if (player == null) return;
 

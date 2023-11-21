@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public static HashMap<UUID, Long> pointerDrop = new HashMap<>();
  Performs the drop checks for the pointer item. Then deletes the pointer instead of throwing it.
  @param droppedItem The item to drop.
  @param player      The player who is dropping the item. */
-private static boolean dropPointer(Item droppedItem, Player player) {
+private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player player) {
   if (!getIdentifier(droppedItem.getItemStack()).equals("pointer")) return false;
 
   if (!pointerDrop.containsKey(player.getUniqueId())) {
