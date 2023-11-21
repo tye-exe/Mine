@@ -1,12 +1,12 @@
-package me.tye.mine;
+package me.tye.mine.utils;
 
+import me.tye.mine.Mine;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,6 +27,9 @@ import java.util.logging.Logger;
 public class Util {
 
 public static JavaPlugin plugin = JavaPlugin.getPlugin(Mine.class);
+
+public static File dataFolder = plugin.getDataFolder();
+
 public static Logger log = plugin.getLogger();
 public static NamespacedKey identifierKey = new NamespacedKey(plugin, "identifier");
 
@@ -57,80 +60,13 @@ public static @NotNull ItemStack itemProperties(@NotNull Material material, @Nul
   return itemStack;
 }
 
-/**
- * @param item The item to get the identifier from.
- * @return The identifier of an item, or an empty string is none is found.
- */
-public static @NotNull String getIdentifier(@Nullable ItemStack item) {
-  if (item == null) return "";
-
-  ItemMeta itemMeta = item.getItemMeta();
-  if (itemMeta == null) return "";
-
-  String identifier = itemMeta.getPersistentDataContainer().get(identifierKey, PersistentDataType.STRING);
-  if (identifier == null) return  "";
-
-  return identifier;
-}
-
-
-
-/**
- Checks if any items in a player inventory contains the given identifier.
- @param inv        The players inventory to check.
- @param identifier The give identifier.
- @return True if the inventory has an item with this identifier, false otherwise. */
-public static boolean inventoryContainsIdentifier(@NotNull PlayerInventory inv, @Nullable String identifier) {
-  for (ItemStack itemStack : inv) {
-    String itemIdentity = getIdentifier(itemStack);
-
-    if (itemIdentity.isEmpty()) continue;
-    if (!itemIdentity.equals(identifier)) continue;
-
-    return true;
-  }
-  return false;
-}
-
-/**
- Deletes an item in a players inventory if it has the given identifier.
- * @param inv The inventory to remove the item from.
- * @param identifier The identifier of items to remove from the inventory.
- */
-public static void deleteItemByIdentifier(@NotNull PlayerInventory inv, @Nullable String identifier) {
-  for (int i = 0; i < inv.getSize(); i++) {
-    ItemStack item = inv.getItem(i);
-
-    if (item == null) continue;
-
-    String foundIdentifier = getIdentifier(item);
-    if (!foundIdentifier.equals(identifier)) continue;
-
-    inv.setItem(i, new ItemStack(Material.AIR));
-  }
-}
-
-
-/**
- Checks if an item was created by mine by checking if it has the persistent data of the identifier key.
- * @param item The item to check if it is from Mine.
- * @return True if it is from Mine.
- */
-public static boolean isMineItem(@Nullable ItemStack item) {
-  if (item == null) return false;
-
-  ItemMeta itemMeta = item.getItemMeta();
-  if (itemMeta == null) return false;
-
-  String identifier = itemMeta.getPersistentDataContainer().get(identifierKey, PersistentDataType.STRING);
-  return identifier != null;
-}
 
 /**
  This method <b>does</b> take into account diagonal blocks.
  * @param block The block to check the neighbours of.
  * @param material Only returns the neighboring blocks with this material. If this is set to null, then all the surrounding blocks will be returned.
- * @return A list of blocks directly touching the given block that have the given material.
+ * @return A list of blocks directly touching the given block that have the given material.<br>
+ * This <b>doesn't</b> include the given block.
  */
 public static @NotNull List<Block> getSurrounding(@NotNull Block block, @Nullable Material material) {
   List<Block> surrounding = new ArrayList<>();
@@ -232,8 +168,8 @@ public static @NotNull HashMap<String,Object> getKeysRecursive(@NotNull String k
 public static @NotNull String getLang(@NotNull String key, @Nullable String... replace) {
   String rawResponse = String.valueOf(lang.get(key));
 
-  //if config doesn't contain the key it falls back to the built in one.
-  if (rawResponse == null) {
+  //if config doesn't contain the key it falls back to the built-in one.
+  if (rawResponse.equals("null")) {
 
     InputStream defultLandInputStream = plugin.getResource("langFiles/"+getConfig("lang")+".yml");
     HashMap<String,Object> defaultLang;
@@ -248,7 +184,7 @@ public static @NotNull String getLang(@NotNull String key, @Nullable String... r
 
     rawResponse = String.valueOf(defaultLang.get(key));
 
-    if (rawResponse == null) {
+    if (rawResponse.equals("null")) {
 
       if (key.equals("exceptions.noSuchResponse")) {
         return "Unable to get key \"lang.noSuchResponse\" from lang file. This message is in english to prevent a stack overflow error.";
@@ -266,7 +202,6 @@ public static @NotNull String getLang(@NotNull String key, @Nullable String... r
 
   for (int i = 0; i <= replace.length-1; i += 2) {
     if (replace[i+1] == null) continue;
-
 
     rawResponse = rawResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
   }
@@ -365,14 +300,14 @@ public static @NotNull HashMap<String,Object> returnFileConfigs(@NotNull File ex
   try {
     //reads data from config file and formats it
     FileReader fr = new FileReader(externalFile);
-    HashMap<String,Object> unformattedloadedValues = new Yaml().load(fr);
+    HashMap<String,Object> unformattedLoadedValues = new Yaml().load(fr);
     fr.close();
 
-    if (unformattedloadedValues == null) {
-      unformattedloadedValues = new HashMap<>();
+    if (unformattedLoadedValues == null) {
+      unformattedLoadedValues = new HashMap<>();
     }
 
-    loadedValues = getKeysRecursive(unformattedloadedValues);
+    loadedValues = getKeysRecursive(unformattedLoadedValues);
     HashMap<String,Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
 
     //checks if there is a key missing in the file
