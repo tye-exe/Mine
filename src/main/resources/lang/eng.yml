@@ -1,5 +1,5 @@
 pointer:
-  getItem: "Left click to select one corner, right click to select the other.{n}Drop the pointer item to confirm the selection.{n}Rerun this command to stop the selection."
+  getItem: "Left click to select one corner, right click to select the other.\nDrop the pointer item to confirm the selection.\nRerun this command to stop the selection."
   confirmSelection: "Drop this item again to confirm selection."
   missingSelection: "You need to have selected two blocks."
 

@@ -1,6 +1,7 @@
 package me.tye.mine;
 
 import me.tye.mine.utils.Identifier;
+import me.tye.mine.utils.Lang;
 import me.tye.mine.utils.Sounds;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -46,20 +47,20 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
   UUID playerId = player.getUniqueId();
 
   if (!selections.containsKey(playerId)) {
-    player.sendMessage(getLang("pointer.missingSelection"));
+    player.sendMessage(Lang.pointer_missingSelected.toString());
     return false;
   }
 
   Selection selection = selections.get(playerId);
   if (!(selection.hasSetStartLocation() && selection.hasSetEndLocation())) {
-    player.sendMessage(getLang("pointer.missingSelection"));
+    player.sendMessage(Lang.pointer_missingSelected.toString());
     return false;
   }
 
 
   if (!pointerDrop.containsKey(playerId)) {
     pointerDrop.put(playerId, System.currentTimeMillis());
-    player.sendMessage(getLang("pointer.confirmSelection"));
+    player.sendMessage(Lang.pointer_confirmSelected.toString());
     return false;
   }
 
@@ -67,7 +68,7 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
 
   if (System.currentTimeMillis() - dropRetryInterval > lastDropAttempt) {
     pointerDrop.put(playerId, System.currentTimeMillis());
-    player.sendMessage(getLang("pointer.confirmSelection"));
+    player.sendMessage(Lang.pointer_confirmSelected.toString());
     return false;
   }
 

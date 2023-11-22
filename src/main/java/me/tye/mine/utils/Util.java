@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -124,26 +124,6 @@ public static @NotNull List<Block> getSurrounding(@NotNull Block block, @Nullabl
   return surrounding;
 }
 
-
-
-//lang & config
-private static HashMap<String,Object> lang = new HashMap<>();
-private static HashMap<String,Object> config = new HashMap<>();
-
-/**
- Sets the lang responses the to the given HashMap.
- @param lang New lang map. */
-public static void setLang(@Nullable HashMap<String,Object> lang) {
-  Util.lang = getKeysRecursive(lang);
-}
-
-/**
- Sets the config responses to the given HashMap.
- @param config New config map. */
-public static void setConfig(@Nullable HashMap<String,Object> config) {
-  Util.config = getKeysRecursive(config);
-}
-
 /**
  Formats the Map returned from Yaml.load() into a hashmap where the exact key corresponds to the value.<br>
  E.G: key: "example.response" value: "test".
@@ -190,64 +170,9 @@ public static @NotNull HashMap<String,Object> getKeysRecursive(@NotNull String k
   return map;
 }
 
-/**
- Gets value from loaded lang file.
- If no external value for this key can be found it will attempt to get the lang response from the internal file. If there is no internal file for the selected lang then it will fall back to english.<br>
- If there is still no response found for the key an error message will be sent into console.
- @param key     Key to the value from the loaded lang file.
- @param replace Should be inputted in "valueToReplace0", valueToReplaceWith0", "valueToReplace1", valueToReplaceWith2"... etc
- @return The lang response with the specified values replaced. */
-public static @NotNull String getLang(@NotNull String key, @Nullable String... replace) {
-  Object response = lang.get(key);
-
-  if (response == null) {
-    return "Unable to find key \""+key+"\" in lang file.\nPlease inform the server admins about this.\nIf you are an admin then please inform the devs about this.";
-  }
-
-  String stringResponse = String.valueOf(response);
-
-  for (int i = 0; i <= replace.length-1; i += 2) {
-    if (replace[i+1] == null) continue;
-
-    stringResponse = stringResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
-  }
-
-  //the A appears for some reason?
-  return stringResponse.replaceAll("Â§", "§");
-}
 
 /**
- Gets a value from the config file.<br>
- If no external value can be found it will fall back onto the default internal value. If there is still no value it will <b>throw a runtime error</b>, as this is an oversight made during development.
- <b>Make sure that a value is always in the internal config file before trying to get it!</b>
- @param key Key for the config to get the value of.
- @return The value from the file. */
-public static @NotNull Object getConfig(@NotNull String key) {
-  Object response;
-
-  //if config doesn't contain the key it checks if it is present in default config files.
-  if (!config.containsKey(key)) {
-    HashMap<String,Object> defaultConfig = getKeysRecursive(new Yaml().load(plugin.getResource("config.yml")));
-    response = defaultConfig.get(key);
-
-    if (response == null) {
-      throw new RuntimeException("Unable to find \""+key+"\" in internal config file. Please immediately inform the devs about this.");
-    }
-
-    config.put(key, response);
-    log.warning(getLang("exceptions.noExternalResponse", "key", key));
-
-  }
-  else {
-    response = String.valueOf(config.get(key));
-  }
-
-  return response;
-}
-
-
-/**
- @param filepath Path to the file inside the resource folder.
+ @param filepath Path to the file inside the resource folder. If null an empty HashMap will be returned.
  @return The default YAML values of the resource. */
 public static @NotNull HashMap<String,Object> getDefault(@Nullable String filepath) {
   if (filepath == null) return new HashMap<>();
@@ -282,101 +207,109 @@ public static void createFile(@NotNull File file, @Nullable InputStream resource
     }
 
   } catch (IOException e) {
-    log.log(Level.WARNING, getLang("exceptions.fileCreation", "filePath", file.getAbsolutePath()), e);
+    log.log(Level.WARNING, Lang.excepts_fileCreation.getResponse(Key.filePath.replaceWith(file.getAbsolutePath())), e);
   }
+}
+
+
+/**
+ Parses & formats data from the given inputStream to a Yaml resource.
+ * @param yamlInputStream The given inputStream to a Yaml resource.
+ * @return The parsed values in the format key: "test1.log" value: "works!"<br>
+ * Or an empty hashMap if the given inputStream is null.
+ * @throws IOException If the data couldn't be read from the given inputStream.
+ */
+private static @NotNull HashMap<String, Object> parseYaml(@Nullable InputStream yamlInputStream) throws IOException {
+  if (yamlInputStream == null) return new HashMap<>();
+
+  byte[] resourceBytes = yamlInputStream.readAllBytes();
+
+  String resourceContent = new String(resourceBytes, Charset.defaultCharset());
+
+  return getKeysRecursive(new Yaml().load(resourceContent));
 }
 
 /**
- Reads the data from an external specified yaml file and returns the data in a hashmap of Key, Value. Appending any missing values to the external file, making use of the resourcePath of the file inside the jar.<br>
- If the resource path doesn't return any files then no repairing will be done to the file.
- @param externalFile External config file.
- @param resourcePath Path to the internal file from the resource folder.
- @return The data from the external file with any missing values being loaded in as defaults. */
-public static @NotNull HashMap<String,Object> returnFileConfigs(@NotNull File externalFile, @Nullable String resourcePath) {
-  HashMap<String,Object> loadedValues;
+ Parses the data from an internal YAML file.
+ * @param resourcePath The path to the file from /src/main/resource/
+ * @return The parsed values in the format key: "test1.log" value: "works!" <br>
+ * Or an empty hashMap if the file couldn't be found or read.
+ */
+public static @NotNull HashMap<String, Object> parseInternalYaml(@NotNull String resourcePath) {
+  try (InputStream resourceInputStream = plugin.getResource(resourcePath)) {
+    return parseYaml(resourceInputStream);
 
-  try {
-    //reads data from config file and formats it
-    FileReader fr = new FileReader(externalFile);
-    HashMap<String,Object> unformattedLoadedValues = new Yaml().load(fr);
-    fr.close();
-
-    if (unformattedLoadedValues == null) {
-      unformattedLoadedValues = new HashMap<>();
-    }
-
-    loadedValues = getKeysRecursive(unformattedLoadedValues);
-    HashMap<String,Object> defaultValues = getKeysRecursive(getDefault(resourcePath));
-
-    //checks if there is a key missing in the file
-    if (loadedValues.keySet().containsAll(defaultValues.keySet())) return loadedValues;
-    assert resourcePath != null;
-
-    //gets the missing keys
-    HashMap<String,Object> missing = new HashMap<>();
-    for (String key : defaultValues.keySet()) {
-      if (loadedValues.containsKey(key)) continue;
-
-      missing.put(key, defaultValues.get(key));
-    }
-
-    StringBuilder toAppend = new StringBuilder();
-    InputStream resourceInputStream = plugin.getResource(resourcePath);
-    if (resourceInputStream == null) return new HashMap<>();
-
-    Object[] internalFileText = new String(resourceInputStream.readAllBytes(), StandardCharsets.UTF_8).lines().toArray();
-
-
-    //appends the missing keys with default values and comments that are above them in the default file.
-    for (String missingKey : missing.keySet()) {
-      toAppend.append("\n");
-
-      if (missingKey.contains(".")) {
-        toAppend.append(missingKey).append(": \"")
-                .append(defaultValues.get(missingKey).toString().replace("\"", "\\\""))
-                .append("\"");
-      }
-      else {
-        //searches though internal file to retrieve keys, values, & comments
-        for (int i = 0; i < internalFileText.length; i++) {
-          if (!internalFileText[i].toString().startsWith(missingKey)) continue;
-
-          //search up for start of comments
-          int ii = 0;
-          while (i+ii-1 > 0 && internalFileText[i+ii-1].toString().startsWith("#")) {
-            ii--;
-          }
-
-          //appends all of the comments in correct order
-          while (ii < 0) {
-            toAppend.append(internalFileText[i+ii]).append("\n");
-            ii++;
-          }
-
-          toAppend.append(internalFileText[i].toString());
-        }
-      }
-
-    }
-
-    //writes the missing data (if present) to the config file.
-    if (!toAppend.isEmpty()) {
-      loadedValues.putAll(missing);
-      FileWriter fw = new FileWriter(externalFile, true);
-      fw.write(toAppend.toString());
-      fw.close();
-    }
-
-  } catch (Exception e) {
-    loadedValues = getKeysRecursive(getDefault(resourcePath));
-
-    if (resourcePath != null && resourcePath.equals("config.yml")) {
-      Util.setConfig(getDefault(resourcePath));
-    }
-
-    log.log(Level.SEVERE, getLang("exceptions.errorWritingConfigs", "filePath", externalFile.getAbsolutePath()), e);
+  } catch (IOException e) {
+    log.log(Level.SEVERE, "Unable to parse internal YAML files.\nConfig & lang might break.\n", e);
+    return new HashMap<>();
   }
 
-  return loadedValues;
 }
+
+
+/**
+ Parses the given external file into a hashMap. If the internal file contained keys that the external file didn't then the key-value pare is added to the external file.
+ * @param externalFile The external file to parse.
+ * @param pathToInternalResource The path to the internal resource to repair it with or fallback on if the external file is broken.
+ * @return The key-value pairs from the external file. If any keys were missing from the external file then they are put into the hashMap with their default value.
+ */
+public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNull File externalFile, @Nullable String pathToInternalResource) {
+  HashMap<String,Object> externalYaml;
+
+  //tries to parse the external file.
+  try (InputStream externalInputStream = new FileInputStream(externalFile)) {
+    externalYaml = parseYaml(externalInputStream);
+
+  } catch (FileNotFoundException e) {
+    log.log(Level.SEVERE, Lang.excepts_noFile.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
+
+    //returns an empty hashMap or the internal values if present.
+    return pathToInternalResource == null ?  new HashMap<>() : parseInternalYaml(pathToInternalResource);
+
+  } catch (IOException e) {
+    log.log(Level.SEVERE, Lang.excepts_parseYaml.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
+
+    //returns an empty hashMap or the internal values if present.
+    return pathToInternalResource == null ?  new HashMap<>() : parseInternalYaml(pathToInternalResource);
+  }
+
+
+  //if there is no internal resource to compare against then only the external file data is returned.
+  if (pathToInternalResource == null) return externalYaml;
+
+  HashMap<String,Object> internalYaml = parseInternalYaml(pathToInternalResource);
+
+  //gets the values that the external file is missing;
+  HashMap<String, Object> missingPairsMap = new HashMap<>();
+  internalYaml.forEach((String key, Object value) -> {
+    if (externalYaml.containsKey(key)) return;
+
+    missingPairsMap.put(key, value);
+  });
+
+  //if no values are missing return
+  if (missingPairsMap.keySet().isEmpty()) return externalYaml;
+
+  //Adds all the missing key-value pairs to a stringBuilder.
+  StringBuilder missingPairs = new StringBuilder("\n");
+  missingPairsMap.forEach((String key, Object value) -> {
+    missingPairs.append(key)
+                .append(": ")
+                .append(value.toString())
+                .append("\n");
+  });
+
+  //Adds al the missing pairs to the external Yaml.
+  externalYaml.putAll(missingPairsMap);
+
+  //Writes the missing pairs to the external file.
+  try (FileWriter externalFileWriter = new FileWriter(externalFile)) {
+    externalFileWriter.write(missingPairs.toString());
+  } catch (IOException e) {
+    log.log(Level.WARNING, Lang.excepts_fileRestore.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
+  }
+
+  return externalYaml;
+}
+
 }

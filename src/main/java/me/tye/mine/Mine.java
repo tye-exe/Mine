@@ -1,5 +1,8 @@
 package me.tye.mine;
 
+import me.tye.mine.utils.Configs;
+import me.tye.mine.utils.Key;
+import me.tye.mine.utils.Lang;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -14,10 +17,18 @@ public final class Mine extends JavaPlugin {
 public void onEnable() {
     // Plugin startup logic
 
+    //loads default values into lang & config.
+    Configs.init();
+    Lang.init();
+
     //Creates config folders & files.
     createFile(dataFolder, null, false);
     createFile(configFile, plugin.getResource("config.yml"), true);
     createFile(new File(langFolder + File.separator + "eng.yml"), plugin.getResource("config.yml"), true);
+
+    //Loads user - selected values into lang & config.
+    Configs.load();
+    Lang.load();
 
     //Commands
     Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());
