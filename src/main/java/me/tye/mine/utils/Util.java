@@ -198,60 +198,31 @@ public static @NotNull HashMap<String,Object> getKeysRecursive(@NotNull String k
  @param replace Should be inputted in "valueToReplace0", valueToReplaceWith0", "valueToReplace1", valueToReplaceWith2"... etc
  @return The lang response with the specified values replaced. */
 public static @NotNull String getLang(@NotNull String key, @Nullable String... replace) {
-  String rawResponse = String.valueOf(lang.get(key));
+  Object response = lang.get(key);
 
-  //if config doesn't contain the key it falls back to the built-in one.
-  if (rawResponse.equals("null")) {
-
-    HashMap<String,Object> defaultLang;
-
-    //if the key equals lang then no path to a lang file can be found, so it falls back to english
-    if (!key.equals("lang")) {
-      InputStream defultLandInputStream = plugin.getResource("langFiles/"+getConfig("lang")+".yml");
-      defaultLang = getKeysRecursive(new Yaml().load(defultLandInputStream));
-    }
-    else {
-      //falls back to the eng lang file if the one for the selected lang couldn't be found
-      defaultLang = getKeysRecursive(new Yaml().load(plugin.getResource("langFiles/eng.yml")));
-    }
-
-
-    rawResponse = String.valueOf(defaultLang.get(key));
-
-    //if the key still doesn't exist then error text is returned
-    if (rawResponse.equals("null")) {
-
-      if (key.equals("exceptions.noSuchResponse")) {
-        return "Unable to find key \""+key+"\" in any lang files.\nThis message is in english to prevent a stack overflow error.";
-      }
-      else {
-        rawResponse = getLang("exceptions.noSuchResponse", "key", key);
-      }
-    }
-
-    else {
-      lang.put(key, defaultLang.get(key));
-    }
-
-    log.warning(getLang("exceptions.noExternalResponse", "key", key));
+  if (response == null) {
+    return "Unable to find key \""+key+"\" in lang file.\nPlease inform the server admins about this.\nIf you are an admin then please inform the devs about this.";
   }
+
+  String stringResponse = String.valueOf(response);
 
   for (int i = 0; i <= replace.length-1; i += 2) {
     if (replace[i+1] == null) continue;
 
-    rawResponse = rawResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
+    stringResponse = stringResponse.replaceAll("\\{"+replace[i]+"}", replace[i+1]);
   }
 
   //the A appears for some reason?
-  return rawResponse.replaceAll("Â§", "§");
+  return stringResponse.replaceAll("Â§", "§");
 }
 
 /**
  Gets a value from the config file.<br>
- If no external value can be found it will fall back onto the default internal value. If there is still no value it will return true and log a severe error.
+ If no external value can be found it will fall back onto the default internal value. If there is still no value it will <b>throw a runtime error</b>, as this is an oversight made during development.
+ <b>Make sure that a value is always in the internal config file before trying to get it!</b>
  @param key Key for the config to get the value of.
  @return The value from the file. */
-public static @Nullable Object getConfig(@NotNull String key) {
+public static @NotNull Object getConfig(@NotNull String key) {
   Object response;
 
   //if config doesn't contain the key it checks if it is present in default config files.
@@ -260,27 +231,18 @@ public static @Nullable Object getConfig(@NotNull String key) {
     response = defaultConfig.get(key);
 
     if (response == null) {
-      log.warning(getLang("exceptions.noSuchResponse", "key", key));
-      return Boolean.TRUE;
+      throw new RuntimeException("Unable to find \""+key+"\" in internal config file. Please immediately inform the devs about this.");
     }
 
     config.put(key, response);
     log.warning(getLang("exceptions.noExternalResponse", "key", key));
 
-  } else
+  }
+  else {
     response = String.valueOf(config.get(key));
-
-  switch (key) {
-  case "lang", "keepDeleted.time", "keepDeleted.size" -> {
-    return String.valueOf(response);
-  }
-  case "showErrorTrace", "showOpErrorSummary", "ADR" -> {
-    return Boolean.valueOf(String.valueOf(response));
-  }
   }
 
-  log.warning(getLang("exceptions.noConfigMatch", "key", key));
-  return null;
+  return response;
 }
 
 
