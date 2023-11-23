@@ -1,4 +1,4 @@
-package me.tye.mine;
+package me.tye.mine.utils;
 
 import net.kyori.adventure.text.format.TextColor;
 
