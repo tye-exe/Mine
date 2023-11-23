@@ -1,5 +1,7 @@
 package me.tye.mine.utils;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.util.HashMap;
 
@@ -17,7 +19,7 @@ private static final HashMap<Configs, Object> configs = new HashMap<>();
 /**
  * @return Gets the config response for the selected enum.
  */
-public Object getConfig() {
+public @NotNull Object getConfig() {
   //Makes sure lang value always exists so that responses can happen.
   if (!configs.containsKey(Configs.lang)) {
     configs.put(Configs.lang, "eng");
@@ -36,7 +38,7 @@ public Object getConfig() {
 /**
  * @return Gets the config response for the selected enum wrapped with String.valueOf().
  */
-public String getStringConfig() {
+public @NotNull String getStringConfig() {
   return String.valueOf(getConfig());
 }
 

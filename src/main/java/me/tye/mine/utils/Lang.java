@@ -1,5 +1,7 @@
 package me.tye.mine.utils;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.util.HashMap;
 
@@ -32,6 +34,8 @@ private static final HashMap<Lang, String> langs = new HashMap<>();
  */
 public String getResponse(Key... keys) {
   String response = this.toString();
+public @NotNull String getResponse(@NotNull Key... keys) {
+  String response = this.getResponse();
 
   for (Key key : keys) {
     response = response.replaceAll(key.toString(), "\\{"+key.getReplaceWith()+"}");
@@ -43,7 +47,7 @@ public String getResponse(Key... keys) {
 /**
  * @return The string response without any keys being modified. This is the same as getResponse();
  */
-public String getResponse() {
+public @NotNull String getResponse() {
   //Makes sure this key is always present, as it is used to indicate keys are missing.
   if (!langs.containsKey(Lang.noKey)) {
     langs.put(Lang.noKey, "No response for \"{noKey}\" was registered.");
