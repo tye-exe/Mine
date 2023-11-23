@@ -11,8 +11,8 @@ public enum Lang {
   invalidKey,
 
   pointer_getItem,
-  pointer_confirmSelected,
-  pointer_missingSelected,
+  pointer_confirmSelection,
+  pointer_missingSelection,
 
   excepts_fileCreation,
   excepts_fileRestore,
@@ -26,7 +26,7 @@ private static final HashMap<Lang, String> langs = new HashMap<>();
 
 
 /**
- Gets the string response.
+ Gets the string response for the selected enum.
  * @param keys The keys to modify the response with.
  * @return The modified string.
  */
@@ -34,7 +34,7 @@ public String getResponse(Key... keys) {
   String response = this.toString();
 
   for (Key key : keys) {
-    response = response.replaceAll(key.toString(), key.getReplaceWith());
+    response = response.replaceAll(key.toString(), "\\{"+key.getReplaceWith()+"}");
   }
 
   return response;
@@ -43,8 +43,7 @@ public String getResponse(Key... keys) {
 /**
  * @return The string response without any keys being modified. This is the same as getResponse();
  */
-@Override
-public String toString() {
+public String getResponse() {
   //Makes sure this key is always present, as it is used to indicate keys are missing.
   if (!langs.containsKey(Lang.noKey)) {
     langs.put(Lang.noKey, "No response for \"{noKey}\" was registered.");
@@ -64,7 +63,7 @@ public String toString() {
  */
 public static void init() {
   //Falls back to english if default values can't be found.
-  String resourcePath = "lang/" + Configs.lang + ".yml";
+  String resourcePath = "lang/" + Configs.lang.getStringConfig() + ".yml";
   if (plugin.getResource(resourcePath) == null) {
     resourcePath = "lang/eng.yml";
   }
@@ -74,7 +73,13 @@ public static void init() {
   internalYaml.forEach((String key, Object value) -> {
     String formattedKey = key.replace('.', '_');
 
-    langs.put(Lang.valueOf(formattedKey), value.toString());
+    try {
+      langs.put(Lang.valueOf(formattedKey), value.toString());
+
+    } catch (IllegalArgumentException e) {
+      //Dev warning
+      throw new RuntimeException(formattedKey + " isn't present in the lang enum.");
+    }
   });
 
   //Checks if any default values are missing.
@@ -82,7 +87,7 @@ public static void init() {
     if (langs.containsKey(lang)) continue;
 
     //Dev warning.
-    throw new RuntimeException(String.valueOf(lang) + "isn't in default config file.");
+    throw new RuntimeException(lang+" isn't in default lang file.");
   }
 }
 
@@ -92,13 +97,13 @@ public static void init() {
  */
 public static void load() {
   //No repair is attempted if the internal file can't be found.
-  String resourcePath = "lang/" + Configs.lang + ".yml";
+  String resourcePath = "lang/" + Configs.lang.getStringConfig() + ".yml";
   if (plugin.getResource(resourcePath) == null) {
     resourcePath = null;
   }
 
   //Loads the external lang responses. No file repairing is done if an internal lang can't be found.
-  File externalFile = new File(dataFolder.toPath()+File.separator+Configs.lang+".yml");
+  File externalFile = new File(dataFolder.toPath()+File.separator+Configs.lang.getStringConfig()+".yml");
   HashMap<String,Object> externalYaml = Util.parseAndRepairExternalYaml(externalFile, resourcePath);
 
   externalYaml.forEach((String key, Object value) -> {

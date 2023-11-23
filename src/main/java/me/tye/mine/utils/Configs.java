@@ -13,13 +13,15 @@ public enum Configs {
  */
 private static final HashMap<Configs, Object> configs = new HashMap<>();
 
-Configs() {}
 
+/**
+ * @return Gets the config response for the selected enum.
+ */
 public Object getConfig() {
   //Makes sure lang value always exists so that responses can happen.
   if (!configs.containsKey(Configs.lang)) {
     configs.put(Configs.lang, "eng");
-    Util.log.warning(Lang.noKey.getResponse(Key.key));
+    Util.log.warning(Lang.noKey.getResponse(Key.key.replaceWith(Configs.lang.toString())));
   }
 
   Object response = configs.get(this);
@@ -32,10 +34,9 @@ public Object getConfig() {
 }
 
 /**
- * @return The config response as a string.
+ * @return Gets the config response for the selected enum wrapped with String.valueOf().
  */
-@Override
-public String toString() {
+public String getStringConfig() {
   return String.valueOf(getConfig());
 }
 
@@ -48,7 +49,12 @@ public static void init() {
   internalConfig.forEach((String key, Object value) -> {
     String formattedKey = key.replace('.', '_');
 
-    configs.put(Configs.valueOf(formattedKey), value);
+    try {
+      configs.put(Configs.valueOf(formattedKey), value);
+    } catch (IllegalArgumentException e) {
+      //Dev warning
+      throw new RuntimeException(formattedKey + " isn't in default config file.");
+    }
   });
 
   //Checks if any default values are missing.
@@ -56,7 +62,7 @@ public static void init() {
     if (configs.containsKey(config)) continue;
 
     //Dev warning.
-    throw new RuntimeException(String.valueOf(config) + "isn't in default config file.");
+    throw new RuntimeException(config+" isn't in default config file.");
   }
 }
 

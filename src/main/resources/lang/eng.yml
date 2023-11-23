@@ -4,4 +4,5 @@ pointer:
   missingSelection: "You need to have selected two blocks."
 
 
-exceptions:
+excepts:
+  noFile: "a"

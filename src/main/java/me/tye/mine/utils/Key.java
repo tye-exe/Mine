@@ -2,9 +2,9 @@ package me.tye.mine.utils;
 
 public enum Key {
 
-  key("{key}"),
-  player("{player}"),
-  filePath("{filePath");
+  key("key"),
+  player("player"),
+  filePath("filePath");
 
 private final String valueToReplace;
 private String replaceWith = "";

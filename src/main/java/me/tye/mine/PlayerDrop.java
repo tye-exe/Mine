@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import static me.tye.mine.Selection.selections;
-import static me.tye.mine.utils.Util.*;
+import static me.tye.mine.utils.Util.dropRetryInterval;
 
 public class PlayerDrop implements Listener {
 
@@ -47,20 +47,20 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
   UUID playerId = player.getUniqueId();
 
   if (!selections.containsKey(playerId)) {
-    player.sendMessage(Lang.pointer_missingSelected.toString());
+    player.sendMessage(Lang.pointer_missingSelection.getResponse());
     return false;
   }
 
   Selection selection = selections.get(playerId);
   if (!(selection.hasSetStartLocation() && selection.hasSetEndLocation())) {
-    player.sendMessage(Lang.pointer_missingSelected.toString());
+    player.sendMessage(Lang.pointer_missingSelection.getResponse());
     return false;
   }
 
 
   if (!pointerDrop.containsKey(playerId)) {
     pointerDrop.put(playerId, System.currentTimeMillis());
-    player.sendMessage(Lang.pointer_confirmSelected.toString());
+    player.sendMessage(Lang.pointer_confirmSelection.getResponse());
     return false;
   }
 
@@ -68,7 +68,7 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
 
   if (System.currentTimeMillis() - dropRetryInterval > lastDropAttempt) {
     pointerDrop.put(playerId, System.currentTimeMillis());
-    player.sendMessage(Lang.pointer_confirmSelected.toString());
+    player.sendMessage(Lang.pointer_confirmSelection.getResponse());
     return false;
   }
 
