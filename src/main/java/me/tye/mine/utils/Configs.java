@@ -20,17 +20,9 @@ private static final HashMap<Configs, Object> configs = new HashMap<>();
  * @return Gets the config response for the selected enum.
  */
 public @NotNull Object getConfig() {
-  //Makes sure lang value always exists so that responses can happen.
-  if (!configs.containsKey(Configs.lang)) {
-    configs.put(Configs.lang, "eng");
-    Util.log.warning(Lang.noKey.getResponse(Key.key.replaceWith(Configs.lang.toString())));
-  }
-
   Object response = configs.get(this);
 
-  if (response == null) {
-    throw new RuntimeException("Unable to find key \""+this+"\" in config file.\nPlease inform the devs about this.");
-  }
+  assert response != null;
 
   return response;
 }
