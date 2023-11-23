@@ -5,7 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.HashMap;
 
-import static me.tye.mine.utils.Util.*;
+import static me.tye.mine.utils.Util.langFolder;
+import static me.tye.mine.utils.Util.plugin;
 
 public enum Lang {
 
@@ -34,7 +35,7 @@ public @NotNull String getResponse(@NotNull Key... keys) {
   String response = this.getResponse();
 
   for (Key key : keys) {
-    response = response.replaceAll(key.toString(), "\\{"+key.getReplaceWith()+"}");
+    response = response.replaceAll("\\{"+key+"}", key.getReplaceWith());
   }
 
   return response;

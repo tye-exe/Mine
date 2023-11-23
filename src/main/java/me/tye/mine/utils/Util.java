@@ -170,19 +170,6 @@ public static @NotNull HashMap<String,Object> getKeysRecursive(@NotNull String k
   return map;
 }
 
-
-/**
- @param filepath Path to the file inside the resource folder. If null an empty HashMap will be returned.
- @return The default YAML values of the resource. */
-public static @NotNull HashMap<String,Object> getDefault(@Nullable String filepath) {
-  if (filepath == null) return new HashMap<>();
-
-  InputStream resourceInputSteam = plugin.getResource(filepath);
-  if (resourceInputSteam == null) return new HashMap<>();
-
-  return new Yaml().load(resourceInputSteam);
-}
-
 /**
  Copies the content of an internal file to a new external one.
  @param file     External file destination
@@ -275,48 +262,53 @@ public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNu
     log.log(Level.SEVERE, Lang.excepts_noFile.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
 
     //returns an empty hashMap or the internal values if present.
-    return pathToInternalResource == null ?  new HashMap<>() : parseInternalYaml(pathToInternalResource);
+    return pathToInternalResource == null ? new HashMap<>() : parseInternalYaml(pathToInternalResource);
 
   } catch (IOException e) {
     log.log(Level.SEVERE, Lang.excepts_parseYaml.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
 
     //returns an empty hashMap or the internal values if present.
-    return pathToInternalResource == null ?  new HashMap<>() : parseInternalYaml(pathToInternalResource);
+    return pathToInternalResource == null ? new HashMap<>() : parseInternalYaml(pathToInternalResource);
   }
 
 
   //if there is no internal resource to compare against then only the external file data is returned.
-  if (pathToInternalResource == null) return externalYaml;
+  if (pathToInternalResource == null)
+    return externalYaml;
 
   HashMap<String,Object> internalYaml = parseInternalYaml(pathToInternalResource);
 
   //gets the values that the external file is missing;
-  HashMap<String, Object> missingPairsMap = new HashMap<>();
+  HashMap<String,Object> missingPairsMap = new HashMap<>();
   internalYaml.forEach((String key, Object value) -> {
-    if (externalYaml.containsKey(key)) return;
+    if (externalYaml.containsKey(key))
+      return;
 
     missingPairsMap.put(key, value);
   });
 
   //if no values are missing return
-  if (missingPairsMap.keySet().isEmpty()) return externalYaml;
+  if (missingPairsMap.keySet().isEmpty())
+    return externalYaml;
 
   //Adds all the missing key-value pairs to a stringBuilder.
   StringBuilder missingPairs = new StringBuilder("\n");
   missingPairsMap.forEach((String key, Object value) -> {
     missingPairs.append(key)
                 .append(": \"")
-                .append(value.toString())
+                .append(reserveEscapeChars(value))
                 .append("\"\n");
   });
 
   //Adds al the missing pairs to the external Yaml.
   externalYaml.putAll(missingPairsMap);
 
+
   //Writes the missing pairs to the external file.
-  try (FileWriter externalFileWriter = new FileWriter(externalFile)) {
-    externalFileWriter.write(missingPairs.toString());
-  } catch (IOException e) {
+  try (FileWriter externalFileWriter = new FileWriter(externalFile, true)) {
+    externalFileWriter.append(missingPairs.toString());
+
+  }catch (IOException e) {
     //Logs a warning
     log.log(Level.WARNING, Lang.excepts_fileRestore.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
 
@@ -327,6 +319,35 @@ public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNu
   }
 
   return externalYaml;
+}
+
+/**
+ Object.toString() changes \" to ". This method resolves this problem.
+ * @param value The object to get the string from.
+ * @return The correct string from the given object.
+ */
+private static String reserveEscapeChars(Object value) {
+  char[] valueCharArray = value.toString().toCharArray();
+  StringBuilder correctString = new StringBuilder();
+
+
+  for (int i = 0; i < valueCharArray.length; i++) {
+    //if it's the start of end " char then add it anyway.
+    if (i == 0 || i == valueCharArray.length - 1) {
+      correctString.append(valueCharArray[i]);
+      continue;
+    }
+
+    if (valueCharArray[i] != '"') {
+      correctString.append(valueCharArray[i]);
+      continue;
+    }
+
+    correctString.append('\\');
+    correctString.append('"');
+  }
+
+  return correctString.toString();
 }
 
 }
