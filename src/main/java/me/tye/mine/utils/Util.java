@@ -188,24 +188,35 @@ public static @NotNull HashMap<String,Object> getDefault(@Nullable String filepa
  @param file     External file destination
  @param resource Input stream for the data to write, or null if target is an empty file/dir.
  @param isFile Set to true to create a file. Set to false to create a dir.*/
+public static void makeRequiredFile(@NotNull File file, @Nullable InputStream resource, boolean isFile) throws IOException {
+  if (file.exists())
+    return;
+
+  if (isFile) {
+    if (!file.createNewFile())
+      throw new IOException();
+  }
+  else {
+    if (!file.mkdir())
+      throw new IOException();
+  }
+
+  if (resource != null) {
+    String text = new String(resource.readAllBytes());
+    FileWriter fw = new FileWriter(file);
+    fw.write(text);
+    fw.close();
+  }
+}
+
+/**
+ Copies the content of an internal file to a new external one.
+ @param file     External file destination
+ @param resource Input stream for the data to write, or null if target is an empty file/dir.
+ @param isFile Set to true to create a file. Set to false to create a dir.*/
 public static void createFile(@NotNull File file, @Nullable InputStream resource, boolean isFile) {
-  if (file.exists()) return;
-
   try {
-    if (isFile) {
-      if (!file.createNewFile()) throw new IOException();
-    }
-    else {
-      if (!file.mkdir()) throw new IOException();
-    }
-
-    if (resource != null) {
-      String text = new String(resource.readAllBytes());
-      FileWriter fw = new FileWriter(file);
-      fw.write(text);
-      fw.close();
-    }
-
+    makeRequiredFile(file, resource, isFile);
   } catch (IOException e) {
     log.log(Level.WARNING, Lang.excepts_fileCreation.getResponse(Key.filePath.replaceWith(file.getAbsolutePath())), e);
   }
@@ -294,9 +305,9 @@ public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNu
   StringBuilder missingPairs = new StringBuilder("\n");
   missingPairsMap.forEach((String key, Object value) -> {
     missingPairs.append(key)
-                .append(": ")
+                .append(": \"")
                 .append(value.toString())
-                .append("\n");
+                .append("\"\n");
   });
 
   //Adds al the missing pairs to the external Yaml.
@@ -306,7 +317,13 @@ public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNu
   try (FileWriter externalFileWriter = new FileWriter(externalFile)) {
     externalFileWriter.write(missingPairs.toString());
   } catch (IOException e) {
+    //Logs a warning
     log.log(Level.WARNING, Lang.excepts_fileRestore.getResponse(Key.filePath.replaceWith(externalFile.getAbsolutePath())), e);
+
+    //Logs the keys that couldn't be appended.
+    missingPairsMap.forEach((String key, Object value) -> {
+      log.log(Level.WARNING, key + ": " + value);
+    });
   }
 
   return externalYaml;

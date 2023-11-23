@@ -76,7 +76,7 @@ public static void load() {
       Configs config = Configs.valueOf(formattedKey);
       configs.put(config, value);
     } catch (IllegalArgumentException e) {
-      Util.log.warning(Lang.invalidKey.getResponse(Key.key.replaceWith(key)));
+      Util.log.warning(Lang.excepts_invalidKey.getResponse(Key.key.replaceWith(key)));
     }
   });
 }

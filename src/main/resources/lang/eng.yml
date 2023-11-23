@@ -5,4 +5,8 @@ pointer:
 
 
 excepts:
-  noFile: "a"
+  invalidKey: "{key} is not a valid key for Mine!"
+  fileCreation: "The file {filePath} could not be created."
+  fileRestore: "Missing keys couldn't be appended to external file \"{filePath}\". Falling back to default values:"
+  parseYaml: "Couldn't parse Yaml data from {filePath}. Falling back to default values (if present)."
+  noFile: "Couldn't parse Yaml data from {filePath}, it doesn't exist. Falling back to default values (if present)."

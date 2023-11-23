@@ -5,17 +5,15 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.HashMap;
 
-import static me.tye.mine.utils.Util.dataFolder;
-import static me.tye.mine.utils.Util.plugin;
+import static me.tye.mine.utils.Util.*;
 
 public enum Lang {
-  noKey,
-  invalidKey,
 
   pointer_getItem,
   pointer_confirmSelection,
   pointer_missingSelection,
 
+  excepts_invalidKey,
   excepts_fileCreation,
   excepts_fileRestore,
   excepts_parseYaml,
@@ -98,7 +96,7 @@ public static void load() {
   }
 
   //Loads the external lang responses. No file repairing is done if an internal lang can't be found.
-  File externalFile = new File(dataFolder.toPath()+File.separator+Configs.lang.getStringConfig()+".yml");
+  File externalFile = new File(langFolder.toPath()+File.separator+Configs.lang.getStringConfig()+".yml");
   HashMap<String,Object> externalYaml = Util.parseAndRepairExternalYaml(externalFile, resourcePath);
 
   externalYaml.forEach((String key, Object value) -> {
@@ -108,7 +106,7 @@ public static void load() {
     try {
       langs.put(Lang.valueOf(formattedKey), value.toString());
     } catch (IllegalArgumentException e) {
-      Util.log.warning(Lang.invalidKey.getResponse(Key.key.replaceWith(key)));
+      Util.log.warning(Lang.excepts_invalidKey.getResponse(Key.key.replaceWith(key)));
     }
   });
 }
