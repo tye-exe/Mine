@@ -32,8 +32,6 @@ private static final HashMap<Lang, String> langs = new HashMap<>();
  * @param keys The keys to modify the response with.
  * @return The modified string.
  */
-public String getResponse(Key... keys) {
-  String response = this.toString();
 public @NotNull String getResponse(@NotNull Key... keys) {
   String response = this.getResponse();
 
@@ -55,9 +53,7 @@ public @NotNull String getResponse() {
 
   String response = langs.get(this);
 
-  if (response == null) {
-    return "Unable to find key \""+this+"\" in lang file.\nPlease inform the server admins about this.\nIf you are an admin then please inform the devs about this.";
-  }
+  assert response != null;
 
   return response;
 }

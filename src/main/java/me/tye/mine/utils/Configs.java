@@ -28,9 +28,7 @@ public @NotNull Object getConfig() {
 
   Object response = configs.get(this);
 
-  if (response == null) {
-    throw new RuntimeException("Unable to find key \""+this+"\" in config file.\nPlease inform the devs about this.");
-  }
+  assert response != null;
 
   return response;
 }
