@@ -1,7 +1,9 @@
 package me.tye.mine;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
@@ -28,6 +30,8 @@ private final ArrayList<Location> selected = new ArrayList<>();
 
 public Selection(@NotNull UUID playerID) {
   this.playerID = playerID;
+
+  renderOutline();
 }
 
 /**
@@ -78,12 +82,25 @@ public boolean hasSetLocation(@NotNull Action action) {
   return false;
 }
 
+/**
+ * @return True if the user has set an end location.
+ */
 public boolean hasSetEndLocation() {
   return endLoc.getY() != Double.MAX_VALUE;
 }
 
+/**
+ * @return True if the user has set a start location.
+ */
 public boolean hasSetStartLocation() {
   return endLoc.getY() != Double.MAX_VALUE;
+}
+
+/**
+ * @return True if the user has a start location selected & an end location selected.
+ */
+public boolean hasSelection() {
+  return hasSetEndLocation() && hasSetStartLocation();
 }
 
 /**
@@ -142,5 +159,28 @@ private void restoreBlocks(@NotNull Location locationToRestore, boolean includeA
   restoreBlocks.add(locationToRestore.getBlock().getState());
 
   player.sendBlockChanges(restoreBlocks);
+}
+
+private void renderOutline() {
+  new Thread(() -> {
+
+    //Only runs while the player is selecting.
+    while (selections.containsKey(playerID)) {
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException ignore) {}
+
+      if (!hasSelection()) continue;
+
+      Player player = Bukkit.getPlayer(playerID);
+
+      if (player == null) return;
+
+      Particle.DustOptions dustOptions = new Particle.DustOptions(Color.fromRGB(255, 0, 0), 1.0F);
+      player.spawnParticle(Particle.REDSTONE, player.getLocation().add(0.0, 2.0, 0.0), 5, 0.0, 1.0, 0.0, dustOptions);
+
+    }
+
+  }).start();
 }
 }

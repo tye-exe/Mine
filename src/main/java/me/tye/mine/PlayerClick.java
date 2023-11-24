@@ -13,7 +13,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import static me.tye.mine.utils.Util.*;
+import static me.tye.mine.utils.Util.getSurrounding;
+import static me.tye.mine.utils.Util.plugin;
 
 public class PlayerClick implements Listener {
 
@@ -51,17 +52,8 @@ private static void select(@NotNull PlayerInteractEvent e) {
   //if the block is the same then use secondary
   BlockData cornerBlock = Material.MAGENTA_GLAZED_TERRACOTTA.createBlockData();
 
-  if (clickedBlock.getType().equals(cornerBlock.getMaterial())) {
-    cornerBlock = Material.PEARLESCENT_FROGLIGHT.createBlockData();
-  }
-
   if (action.isRightClick()) {
     cornerBlock = Material.ORANGE_GLAZED_TERRACOTTA.createBlockData();
-
-    //if the block is the same then use secondary
-    if (clickedBlock.getType().equals(cornerBlock.getMaterial())) {
-      cornerBlock = Material.OCHRE_FROGLIGHT.createBlockData();
-    }
   }
 
   //sendBlockChange needs to be in a runnable as the server sends a block update packet to the client after processing this event.

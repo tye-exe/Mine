@@ -52,7 +52,7 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
   }
 
   Selection selection = selections.get(playerId);
-  if (!(selection.hasSetStartLocation() && selection.hasSetEndLocation())) {
+  if (!(selection.hasSelection())) {
     player.sendMessage(Lang.pointer_missingSelection.getResponse());
     return false;
   }
