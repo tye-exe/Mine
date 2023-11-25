@@ -84,14 +84,14 @@ public void setStartLoc(@NotNull Location startLoc) {
 
   //If the player has made a selection of two or more blocks then the selection is rendered.
   if (hasSelection()) {
-    renderSelection(oldLocation, getStartLoc(), firstSelectedBlock);
+    renderSelection(oldLocation, getStartLoc(), firstSelectedMaterial);
     return;
   }
 
   Collection<BlockState> cornerStates = getNewCornerSurroundingStates(getStartLoc());
 
   BlockState state = getStartLoc().getBlock().getState();
-  state.setType(firstSelectedBlock);
+  state.setType(firstSelectedMaterial);
   cornerStates.add(state);
 
   //Sends the new update blocks a tick later, since when the player clicks on a block, a sends a block update packet.
@@ -111,14 +111,14 @@ public void setEndLoc(@NotNull Location endLoc) {
 
   //If the player has made a selection of two or more blocks then the selection is rendered.
   if (hasSelection()) {
-    renderSelection(oldLocation, getEndLoc(), lastSelectedBlock);
+    renderSelection(oldLocation, getEndLoc(), lastSelectedMaterial);
     return;
   }
 
   Collection<BlockState> cornerStates = getNewCornerSurroundingStates(getEndLoc());
 
   BlockState state = getEndLoc().getBlock().getState();
-  state.setType(lastSelectedBlock);
+  state.setType(lastSelectedMaterial);
   cornerStates.add(state);
 
   //Sends the new update blocks a tick later, since when the player clicks on a block, a sends a block update packet.
