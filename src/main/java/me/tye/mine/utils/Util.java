@@ -71,8 +71,9 @@ public static final Material pointer = Material.WOODEN_SWORD;
  */
 public static final Long dropRetryInterval = 500L;
 
-public static final Material firstSelectedBlock = Material.MAGENTA_GLAZED_TERRACOTTA;
-public static final Material lastSelectedBlock = Material.ORANGE_GLAZED_TERRACOTTA;
+public static final Material firstSelectedMaterial = Material.MAGENTA_GLAZED_TERRACOTTA;
+public static final Material lastSelectedMaterial = Material.ORANGE_GLAZED_TERRACOTTA;
+public static final Material outlineMaterial = Material.RED_STAINED_GLASS;
 
 
 /**
