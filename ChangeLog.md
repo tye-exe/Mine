@@ -4,3 +4,4 @@
 
 ## 0.0.2:
 - Added lang & config support.
+- When two or more blocks are selected a selection outline of Red Glass will be rendered.
