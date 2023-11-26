@@ -18,7 +18,6 @@ import static me.tye.mine.utils.Util.*;
 public class Selection {
 
 public static final HashMap<UUID, Selection> selections = new HashMap<>();
-private final UUID playerID;
 private final Player player;
 
 private Location startLoc = new Location(Bukkit.getWorlds().get(0), 0, Double.MAX_VALUE, 0);
@@ -35,7 +34,6 @@ private final LinkedHashSet<Location> selectionOutline = new LinkedHashSet<>();
 //boiler plate start
 public Selection(@NotNull Player player) {
   this.player = player;
-  this.playerID = player.getUniqueId();
 }
 
 
