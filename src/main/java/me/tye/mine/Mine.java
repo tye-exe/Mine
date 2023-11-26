@@ -1,18 +1,22 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Clan;
 import me.tye.mine.utils.Configs;
-import me.tye.mine.utils.Key;
 import me.tye.mine.utils.Lang;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Objects;
+import java.util.UUID;
 
 import static me.tye.mine.Selection.selections;
 import static me.tye.mine.utils.Util.*;
 
 public final class Mine extends JavaPlugin {
+
+private final HashMap<UUID,Clan> loadedClans = new HashMap<>();
 
 @Override
 public void onEnable() {
