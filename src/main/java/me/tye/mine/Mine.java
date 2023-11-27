@@ -16,7 +16,7 @@ import static me.tye.mine.utils.Util.*;
 
 public final class Mine extends JavaPlugin {
 
-private final HashMap<UUID,Clan> loadedClans = new HashMap<>();
+private final HashMap<UUID, Clan> loadedClans = new HashMap<>();
 
 @Override
 public void onEnable() {

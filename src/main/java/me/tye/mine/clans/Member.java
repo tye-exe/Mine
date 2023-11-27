@@ -1,13 +1,11 @@
 package me.tye.mine.clans;
 
-import org.bukkit.Material;
+import java.util.UUID;
 
 public class Member {
 
-private MemberPerms perms;
+private UUID playerID;
+private UUID permLevel;
+private Perms perms;
 
-
-public boolean canBreak(Material material) {
-
-}
 }
