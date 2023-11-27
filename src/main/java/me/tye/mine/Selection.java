@@ -285,7 +285,7 @@ private void renderSelection(Location cornerToReRestore, Location newSelectedCor
 
   selectionOutline.forEach(location -> {
     BlockState state = location.getBlock().getState();
-    state.setType(Material.RED_STAINED_GLASS);
+    state.setType(outlineMaterial);
     updateBlocks.add(state);
   });
 
