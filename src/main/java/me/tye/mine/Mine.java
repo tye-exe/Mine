@@ -1,6 +1,7 @@
 package me.tye.mine;
 
 import me.tye.mine.clans.Clan;
+import me.tye.mine.clans.Member;
 import me.tye.mine.utils.Configs;
 import me.tye.mine.utils.Lang;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,7 +18,8 @@ import static me.tye.mine.utils.Util.*;
 
 public final class Mine extends JavaPlugin {
 
-private final HashMap<UUID, Clan> loadedClans = new HashMap<>();
+public static final HashMap<UUID, Clan> loadedClans = new HashMap<>();
+public static final HashMap<UUID, Member> onlineMembers = new HashMap<>();
 
 @Override
 public void onEnable() {
@@ -34,7 +36,7 @@ public void onEnable() {
     Lang.load();
 
     try {
-        new Database();
+        Database.init();
     } catch (SQLException e) {
         throw new RuntimeException(e);
     }
@@ -46,6 +48,8 @@ public void onEnable() {
     //Events
     getServer().getPluginManager().registerEvents(new PlayerClick(), this);
     getServer().getPluginManager().registerEvents(new PlayerDrop(), this);
+    getServer().getPluginManager().registerEvents(new PlayerQuit(), this);
+    getServer().getPluginManager().registerEvents(new PlayerJoin(), this);
 
 }
 

@@ -4,27 +4,24 @@ import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.utils.TempConfigsStore;
 import org.codehaus.plexus.util.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
+import java.util.Collection;
 import java.util.UUID;
 
 public class Database {
 private static boolean initiated = false;
-private static Database database;
-
-public static Database getInstance() {
-  return database;
-}
 
 
-private Connection dbConnection;
+private static Connection dbConnection;
 
 /**
  Creates the connection to the database & creates the required tables if they don't exist.
  * @throws SQLException If there was an error interacting with the database.
  */
-public Database() throws SQLException {
+public static void init() throws SQLException {
   if (initiated) return;
 
   String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
@@ -80,7 +77,8 @@ public Database() throws SQLException {
         CREATE TABLE IF NOT EXISTS members (
         memberID TEXT NOT NULL PRIMARY KEY,
               
-
+        permLevel TEXT,
+        defaultPerms TEXT NOT NULL,
               
         clanID TEXT,
         FOREIGN KEY (clanID) REFERENCES clans (clanID) ON DELETE SET NULL
@@ -97,12 +95,11 @@ public Database() throws SQLException {
 
   dbConnection.commit();
 
-  database = this;
   initiated = true;
 }
 
 
-private Connection getDbConnection() throws SQLException {
+private static @NotNull Connection getDbConnection() throws SQLException {
   dbConnection.setAutoCommit(false);
   return dbConnection;
 }
@@ -113,30 +110,39 @@ private Connection getDbConnection() throws SQLException {
  * @return The result set from the database.
  * @throws SQLException If there was an error querying the database.
  */
-private static ResultSet getResult(String query) throws SQLException {
-  Connection dbConnection = getInstance().getDbConnection();
+private static @NotNull ResultSet getResult(@NotNull String query) throws SQLException {
+  Connection dbConnection = getDbConnection();
   Statement statement = dbConnection.createStatement();
   return statement.executeQuery(query);
+}
+
+/**
+ Creates a where statement that matches all the given uuids in the given column.
+ * @param column The given column.
+ * @param uuids The given uuids.
+ * @return The where statement that will match all the uuids.
+ */
+private static @NotNull String createWhere(String column, Collection<UUID> uuids) {
+  StringBuilder where = new StringBuilder("WHERE ");
+
+  uuids.forEach(uuid -> {
+    String stringUUID = uuid.toString();
+    where.append(column)
+        .append(" == ")
+        .append(stringUUID)
+        .append(" OR ");
+  });
+
+  return where.substring(where.length()-4);
 }
 
 /**
  Loads the data from the database into memory.
  */
 public static void loadData() throws SQLException {
-  Connection dbConnection = getInstance().getDbConnection();
+  Connection dbConnection = getDbConnection();
 
 a
-
-}
-
-public static void createClan(Clan newClan) throws SQLException{
-  Connection dbConnection = getInstance().getDbConnection();
-  PreparedStatement statement = dbConnection.prepareStatement(
-      "INSERT INTO clans (clanID, name, description) VALUES(?,?,?)");
-
-  statement.setString(1, newClan.getClanID().toString());
-  statement.setString(2, newClan.getName());
-  statement.setString(3, newClan.getDescription());
 
 }
 
@@ -198,7 +204,6 @@ private static boolean exists(String column, String table, UUID uuid) {
   }
 }
 
-
 public static @Nullable Member getMember(UUID memberID) {
   try (ResultSet memberData = getResult(
       "SELECT memberID FROM members WHERE memberID == "+memberID.toString()
@@ -206,16 +211,90 @@ public static @Nullable Member getMember(UUID memberID) {
 
     memberData.next();
 
-    String clanID = memberData.getString("clanID");
+    UUID clanID = UUID.fromString(memberData.getString("clanID"));
+    UUID clanPermID = UUID.fromString(memberData.getString("clanPermID"));
 
-    return new Member(memberID, );
+    return new Member(memberID, clanID, clanPermID);
 
-  } catch (SQLException e) {
+  } catch (SQLException |IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
     return null;
   }
-
 }
 
+public static @Nullable Clan getClan(UUID clanID) {
+  try (ResultSet clanData = getResult(
+      "SELECT clanID FROM clan WHERE clanID == "+clanID.toString()
+  )) {
+
+    clanData.next();
+
+    String clanName = clanData.getString("name");
+    String clanDescription = clanData.getString("description");
+
+    return new Clan();
+
+  } catch (SQLException |IllegalArgumentException e) {
+    e.printStackTrace();
+    //TODO: remove this before release.
+    return null;
+  }
+}
+
+public static void registerMember(UUID memberID) {
+  try (Connection connection = getDbConnection()) {
+
+    PreparedStatement statement = connection.prepareStatement(
+        "INSERT INTO members (memberID, clanID, clanPermID) VALUES(?,?,?)"
+    );
+
+    statement.setString(1, memberID.toString());
+    statement.setNull(2, Types.VARCHAR);
+    statement.setNull(3, Types.VARCHAR);
+
+    statement.execute();
+    connection.commit();
+
+  } catch (SQLException e) {
+    e.printStackTrace();
+    //TODO: remove when confirmed working.
+  }
+}
+
+public static void createClan(Clan newClan) {
+  try (Connection dbConnection = getDbConnection()) {
+
+    //create the clan
+    PreparedStatement clanCreate = dbConnection.prepareStatement(
+        "INSERT INTO clans (clanID, name, description) VALUES(?,?,?,?,?,?)");
+
+    clanCreate.setString(1, newClan.getClanID().toString());
+    clanCreate.setString(2, newClan.getName());
+    clanCreate.setString(3, newClan.getDescription());
+
+    clanCreate.execute();
+
+    PreparedStatement memberAssign = dbConnection.prepareStatement("""
+    UPDATE members
+    SET clanID = ?
+    ?
+    """
+    );
+
+    memberAssign.setString(1, newClan.getClanID().toString());
+    //TODO: check that this works.
+    memberAssign.setString(2, createWhere("memberID", newClan.getClanMembers()));
+
+    memberAssign.execute();
+
+
+
+    dbConnection.commit();
+
+  } catch (SQLException e) {
+    e.printStackTrace();
+    //TODO: remove when confirmed working.
+  }
+}
 }
