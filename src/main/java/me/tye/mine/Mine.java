@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
@@ -31,6 +32,12 @@ public void onEnable() {
     //Loads user - selected values into lang & config.
     Configs.load();
     Lang.load();
+
+    try {
+        new Database();
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
 
     //Commands
     Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());

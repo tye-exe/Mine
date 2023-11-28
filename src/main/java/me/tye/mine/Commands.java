@@ -1,7 +1,7 @@
 package me.tye.mine;
 
 import me.tye.mine.utils.Identifier;
-import me.tye.mine.utils.Util;
+import me.tye.mine.utils.TempConfigsStore;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -33,7 +33,7 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
 }
 
 private void givePointer(@NotNull Player player) {
-    ItemStack pointer = itemProperties(Util.pointer, "Pointer", "pointer");
+    ItemStack pointer = itemProperties(TempConfigsStore.pointer, "Pointer", "pointer");
     player.getInventory().addItem(pointer);
 }
 

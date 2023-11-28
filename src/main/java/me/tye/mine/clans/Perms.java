@@ -1,10 +1,31 @@
 package me.tye.mine.clans;
 
+import me.tye.mine.Database;
 import org.bukkit.Material;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class Perms {
+
+private final UUID permID;
+
+private String name;
+private String description;
+
+
+public Perms() {
+  UUID uuid = UUID.randomUUID();
+  //ensures that the UUID is unique
+  while (Database.permExists(uuid)) {
+    uuid = UUID.randomUUID();
+  }
+  permID = uuid;
+}
+
+public UUID getPermID() {
+  return permID;
+}
 
 boolean breakableBlocksIsWhitelist = true;
 private final ArrayList<Material> breakBlocks = new ArrayList<>();

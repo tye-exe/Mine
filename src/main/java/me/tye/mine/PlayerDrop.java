@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import static me.tye.mine.Selection.selections;
-import static me.tye.mine.utils.Util.dropRetryInterval;
+import static me.tye.mine.utils.TempConfigsStore.dropRetryInterval;
 
 public class PlayerDrop implements Listener {
 
