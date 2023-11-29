@@ -1,9 +1,11 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.utils.Configs;
 import me.tye.mine.utils.Lang;
+import me.tye.mine.utils.Unloader;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -19,6 +21,7 @@ import static me.tye.mine.utils.Util.*;
 public final class Mine extends JavaPlugin {
 
 public static final HashMap<UUID, Clan> loadedClans = new HashMap<>();
+public static final HashMap<UUID, Claim> loadedClaims = new HashMap<>();
 public static final HashMap<UUID, Member> onlineMembers = new HashMap<>();
 
 @Override

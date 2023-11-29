@@ -1,5 +1,6 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.utils.TempConfigsStore;
@@ -65,8 +66,15 @@ public static void init() throws SQLException {
         CREATE TABLE IF NOT EXISTS claims (
         claimID TEXT NOT NULL PRIMARY KEY,
               
+        worldName TEXT NOT NULL,
               
-              
+        X1 REAL NOT NULL,
+        X2 REAL NOT NULL,
+        Y1 REAL NOT NULL,
+        Y2 REAL NOT NULL,
+        Z1 REAL NOT NULL,
+        Z2 REAL NOT NULL,
+        
         clanID TEXT NOT NULL,
         FOREIGN KEY (clanID) REFERENCES clans (clanID) ON DELETE CASCADE
 
@@ -206,7 +214,7 @@ private static boolean exists(String column, String table, UUID uuid) {
 
 public static @Nullable Member getMember(UUID memberID) {
   try (ResultSet memberData = getResult(
-      "SELECT memberID FROM members WHERE memberID == "+memberID.toString()
+      "SELECT * FROM members WHERE memberID == "+memberID.toString()
   )) {
 
     memberData.next();
@@ -216,7 +224,7 @@ public static @Nullable Member getMember(UUID memberID) {
 
     return new Member(memberID, clanID, clanPermID);
 
-  } catch (SQLException |IllegalArgumentException e) {
+  } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
     return null;
@@ -225,7 +233,7 @@ public static @Nullable Member getMember(UUID memberID) {
 
 public static @Nullable Clan getClan(UUID clanID) {
   try (ResultSet clanData = getResult(
-      "SELECT clanID FROM clan WHERE clanID == "+clanID.toString()
+      "SELECT * FROM clan WHERE clanID == "+clanID.toString()
   )) {
 
     clanData.next();
@@ -233,9 +241,34 @@ public static @Nullable Clan getClan(UUID clanID) {
     String clanName = clanData.getString("name");
     String clanDescription = clanData.getString("description");
 
-    return new Clan();
+    Collection<Member>
+    ResultSet members = getResult("SELECT * FROM members WHERE clanID == "+clanID);
+    while (members.next()) {
 
-  } catch (SQLException |IllegalArgumentException e) {
+    }
+
+    return new Clan(clanID, clanName, clanDescription,  );
+
+  } catch (SQLException | IllegalArgumentException e) {
+    e.printStackTrace();
+    //TODO: remove this before release.
+    return null;
+  }
+}
+
+public static @Nullable Claim getClaim(UUID claimID) {
+  try (ResultSet claimData = getResult(
+      "SELECT * FROM claim WHERE claimID == "+claimID.toString()
+  )) {
+
+    claimData.next();
+
+    String clanName = claimData.getString("name");
+    String clanDescription = claimData.getString("description");
+
+    return new Claim()
+
+  } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
     return null;
@@ -273,8 +306,10 @@ public static void createClan(Clan newClan) {
     clanCreate.setString(2, newClan.getName());
     clanCreate.setString(3, newClan.getDescription());
 
-    clanCreate.execute();
+    clanCreate.executeUpdate();
 
+
+    //adds the members to the clan.
     PreparedStatement memberAssign = dbConnection.prepareStatement("""
     UPDATE members
     SET clanID = ?
@@ -284,11 +319,28 @@ public static void createClan(Clan newClan) {
 
     memberAssign.setString(1, newClan.getClanID().toString());
     //TODO: check that this works.
-    memberAssign.setString(2, createWhere("memberID", newClan.getClanMembers()));
+    memberAssign.setString(2, createWhere("memberID", newClan.getMemberUUIDs()));
+    memberAssign.executeUpdate();
 
-    memberAssign.execute();
 
+    //adds all the claims to the clan.
+    for (Claim claim : newClan.getClanClaims()) {
+      PreparedStatement claimCreate = dbConnection.prepareStatement("""
+        INSERT INTO claims (claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, clanID) VALUES(?,?,?,?,?,?,?,?,?)
+        """);
 
+      claimCreate.setString(1, claim.getClaimID().toString());
+      claimCreate.setString(2, claim.getWorldName());
+      claimCreate.setDouble(3, claim.getX1());
+      claimCreate.setDouble(4, claim.getX2());
+      claimCreate.setDouble(5, claim.getY1());
+      claimCreate.setDouble(6, claim.getY2());
+      claimCreate.setDouble(7, claim.getZ1());
+      claimCreate.setDouble(8, claim.getZ2());
+      claimCreate.setString(9, newClan.getClanID().toString());
+
+      claimCreate.executeUpdate();
+    }
 
     dbConnection.commit();
 

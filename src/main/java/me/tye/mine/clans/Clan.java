@@ -6,7 +6,10 @@ import me.tye.mine.utils.Lang;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 import static me.tye.mine.Mine.loadedClans;
 
@@ -17,9 +20,9 @@ private final UUID clanID;
 private String name;
 private String description;
 
-private final HashMap<UUID, Claim> clanClaims = new HashMap<>();
-private final ArrayList<UUID> clanMembers = new ArrayList<>();
-private final ArrayList<UUID> clanPerms = new ArrayList<>();
+private Collection<UUID> clanClaims = new ArrayList<>();
+private Collection<UUID> clanMembers = new ArrayList<>();
+private Collection<UUID> clanPerms = new ArrayList<>();
 
 
 /**
@@ -76,22 +79,13 @@ public static Clan createClan(@Nullable Claim firstClaim, @NotNull Member owner)
 }
 
 
-public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clanDescription, @NotNull Collection<Claim> clanClaims, @NotNull Collection<Member> clanMembers, @NotNull Collection<Perms> clanPerms)  {
+public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clanDescription, @NotNull Collection<UUID> clanClaims, @NotNull Collection<UUID> clanMembers, @NotNull Collection<UUID> clanPerms)  {
   this.clanID = clanID;
   this.name = clanName;
   this.description = clanDescription;
-
-  clanClaims.forEach(claim -> {
-    this.clanClaims.put(claim.getClaimID(), claim);
-  });
-
-  clanMembers.forEach((member -> {
-    this.clanMembers.add(member.getMemberID());
-  }));
-
-  clanPerms.forEach((perm -> {
-    this.clanPerms.add(perm.getPermID());
-  }));
+  this.clanClaims =  clanClaims;
+  this.clanMembers = clanMembers;
+  this.clanPerms = clanPerms;
 }
 
 public String getName() {
@@ -106,16 +100,40 @@ public UUID getClanID() {
   return clanID;
 }
 
-public HashMap<UUID, Claim> getClanClaims() {
-  return clanClaims;
+public ArrayList<Claim> getClanClaims() {
+  ArrayList<Claim> claims = new ArrayList<>();
+
+  clanClaims.forEach(uuid -> {
+    claims.add(Claim.getClaim(uuid));
+  });
+
+  return claims;
 }
 
-public ArrayList<UUID> getClanMembers() {
+public ArrayList<Member> getClanMembers() {
+  ArrayList<Member> members = new ArrayList<>();
+
+  clanMembers.forEach(uuid -> {
+    members.add(Member.getMember(uuid));
+
+  });
+
+  return members;
+}
+
+public ArrayList<Perms> getClanPerms() {
+  ArrayList<Perms> perms = new ArrayList<>();
+
+  clanPerms.forEach(uuid -> {
+    perms.add(Perms.getPerm(uuid));
+
+  });
+
+  return perms;
+}
+
+public ArrayList<UUID> getMemberUUIDs() {
   return clanMembers;
-}
-
-public ArrayList<UUID> getClanPerms() {
-  return clanPerms;
 }
 
 }
