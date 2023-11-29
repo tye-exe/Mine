@@ -10,7 +10,7 @@ pointer - This command gives you a [pointer](#pointer) item to select an area wi
 
 ### Pointer:
 This item can be obtained by using the "/. pointer" [command](#commands).  
-Left-clicking with the pointer will set a corner of your claim. Right-clicking will set the other corner. Clicking again will change the selected block.  
+Left clicking with the pointer will set a corner of your claim. Right clicking will set the other corner. Clicking again will changed the selected block.  
 When a block is selected it will change to a marker block & light up. When two or more blocks are selected an outline of Red Glass will be rendered along the edges of the selected area.
 
 ## Goals:
@@ -44,8 +44,3 @@ When a block is selected it will change to a marker block & light up. When two o
 - Overrides for permissions and settings in config file.
 - Players with a perm can see a list of all claims & info abt them.
 - Players with a perm can search though claims based on player name and/or claim name.
-
-## Misc:
-Changing the world names will completely **BREAK** claims with this plugin.  
-The players are managed using their uuid, so changing your name **won't** have any impact.  
-If you delete the (path to db) then **all** data for clans, & member will **PERMANENTLY** be erased. Do not delete this file. If you wish to delete data see [TODO](https://www.youtube.com/watch?v=dQw4w9WgXcQ).  

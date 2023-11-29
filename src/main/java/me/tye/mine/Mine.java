@@ -1,30 +1,18 @@
 package me.tye.mine;
 
-import me.tye.mine.clans.Claim;
-import me.tye.mine.clans.Clan;
-import me.tye.mine.clans.Member;
-import me.tye.mine.clans.Perm;
 import me.tye.mine.utils.Configs;
+import me.tye.mine.utils.Key;
 import me.tye.mine.utils.Lang;
-import me.tye.mine.utils.Unloader;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Objects;
-import java.util.UUID;
 
 import static me.tye.mine.Selection.selections;
 import static me.tye.mine.utils.Util.*;
 
 public final class Mine extends JavaPlugin {
-
-public static final HashMap<UUID, Clan> loadedClans = new HashMap<>();
-public static final HashMap<UUID, Claim> loadedClaims = new HashMap<>();
-public static final HashMap<UUID, Perm> loadedPerms = new HashMap<>();
-public static final HashMap<UUID, Member> onlineMembers = new HashMap<>();
 
 @Override
 public void onEnable() {
@@ -40,14 +28,6 @@ public void onEnable() {
     Configs.load();
     Lang.load();
 
-    try {
-        Database.init();
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    }
-
-    Unloader.init();
-
     //Commands
     Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());
     Objects.requireNonNull(getCommand("mine")).setTabCompleter(new TabComplete());
@@ -55,8 +35,6 @@ public void onEnable() {
     //Events
     getServer().getPluginManager().registerEvents(new PlayerClick(), this);
     getServer().getPluginManager().registerEvents(new PlayerDrop(), this);
-    getServer().getPluginManager().registerEvents(new PlayerQuit(), this);
-    getServer().getPluginManager().registerEvents(new PlayerJoin(), this);
 
 }
 
@@ -66,9 +44,6 @@ public void onDisable() {
 
     //Reload support - If a reload happens when blocks are selected then they are restored.
     selections.values().forEach((Selection::restore));
-
-    //Reload support - destroys the unlaoder.
-    Unloader.terminate();
 }
 
 /**

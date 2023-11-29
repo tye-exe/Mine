@@ -1,7 +1,6 @@
 package me.tye.mine;
 
 import me.tye.mine.utils.SendBlockChanges;
-import me.tye.mine.utils.TempConfigsStore;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -14,12 +13,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-import static me.tye.mine.utils.Util.getSurrounding;
-import static me.tye.mine.utils.Util.plugin;
+import static me.tye.mine.utils.Util.*;
 
 public class Selection {
 
 public static final HashMap<UUID, Selection> selections = new HashMap<>();
+private final UUID playerID;
 private final Player player;
 
 private Location startLoc = new Location(Bukkit.getWorlds().get(0), 0, Double.MAX_VALUE, 0);
@@ -36,6 +35,7 @@ private final LinkedHashSet<Location> selectionOutline = new LinkedHashSet<>();
 //boiler plate start
 public Selection(@NotNull Player player) {
   this.player = player;
+  this.playerID = player.getUniqueId();
 }
 
 
@@ -84,14 +84,14 @@ public void setStartLoc(@NotNull Location startLoc) {
 
   //If the player has made a selection of two or more blocks then the selection is rendered.
   if (hasSelection()) {
-    renderSelection(oldLocation, getStartLoc(), TempConfigsStore.firstSelectedMaterial);
+    renderSelection(oldLocation, getStartLoc(), firstSelectedMaterial);
     return;
   }
 
   Collection<BlockState> cornerStates = getNewCornerSurroundingStates(getStartLoc());
 
   BlockState state = getStartLoc().getBlock().getState();
-  state.setType(TempConfigsStore.firstSelectedMaterial);
+  state.setType(firstSelectedMaterial);
   cornerStates.add(state);
 
   //Sends the new update blocks a tick later, since when the player clicks on a block, a sends a block update packet.
@@ -111,14 +111,14 @@ public void setEndLoc(@NotNull Location endLoc) {
 
   //If the player has made a selection of two or more blocks then the selection is rendered.
   if (hasSelection()) {
-    renderSelection(oldLocation, getEndLoc(), TempConfigsStore.lastSelectedMaterial);
+    renderSelection(oldLocation, getEndLoc(), lastSelectedMaterial);
     return;
   }
 
   Collection<BlockState> cornerStates = getNewCornerSurroundingStates(getEndLoc());
 
   BlockState state = getEndLoc().getBlock().getState();
-  state.setType(TempConfigsStore.lastSelectedMaterial);
+  state.setType(lastSelectedMaterial);
   cornerStates.add(state);
 
   //Sends the new update blocks a tick later, since when the player clicks on a block, a sends a block update packet.
@@ -287,7 +287,7 @@ private void renderSelection(Location cornerToReRestore, Location newSelectedCor
 
   selectionOutline.forEach(location -> {
     BlockState state = location.getBlock().getState();
-    state.setType(TempConfigsStore.outlineMaterial);
+    state.setType(Material.RED_STAINED_GLASS);
     updateBlocks.add(state);
   });
 

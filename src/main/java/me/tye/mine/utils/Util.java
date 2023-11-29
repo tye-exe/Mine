@@ -61,6 +61,20 @@ public static final NamespacedKey identifierKey = new NamespacedKey(plugin, "ide
 
 //Configerable (in the future?)
 
+/**
+ The material the pointer item should be.
+ */
+public static final Material pointer = Material.WOODEN_SWORD;
+
+/**
+ How quickly the pointer has to be dropped in succession for a confirmation of a selection. (In milliseconds).
+ */
+public static final Long dropRetryInterval = 500L;
+
+public static final Material firstSelectedMaterial = Material.MAGENTA_GLAZED_TERRACOTTA;
+public static final Material lastSelectedMaterial = Material.ORANGE_GLAZED_TERRACOTTA;
+public static final Material outlineMaterial = Material.RED_STAINED_GLASS;
+
 
 /**
  Sets some attributes of a new item in one method.
