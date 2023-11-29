@@ -3,12 +3,14 @@ package me.tye.mine;
 import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
+import me.tye.mine.clans.Perm;
 import me.tye.mine.utils.TempConfigsStore;
 import org.codehaus.plexus.util.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -57,7 +59,7 @@ public static void init() throws SQLException {
         FOREIGN KEY (clanID) REFERENCES clans (clanID) ON DELETE CASCADE,
         FOREIGN KEY (memberID) REFERENCES membersID (memberID) ON DELETE CASCADE,
         
-        CHECK (clanID != NULL AND memberID != NULL)
+        CHECK (clanID != NULL OR memberID != NULL)
               
         ) WITHOUT ROWID;
         """;
@@ -136,22 +138,12 @@ private static @NotNull String createWhere(String column, Collection<UUID> uuids
   uuids.forEach(uuid -> {
     String stringUUID = uuid.toString();
     where.append(column)
-        .append(" == ")
-        .append(stringUUID)
-        .append(" OR ");
+         .append(" == ")
+         .append(stringUUID)
+         .append(" OR ");
   });
 
   return where.substring(where.length()-4);
-}
-
-/**
- Loads the data from the database into memory.
- */
-public static void loadData() throws SQLException {
-  Connection dbConnection = getDbConnection();
-
-a
-
 }
 
 /**
@@ -241,13 +233,29 @@ public static @Nullable Clan getClan(UUID clanID) {
     String clanName = clanData.getString("name");
     String clanDescription = clanData.getString("description");
 
-    Collection<Member>
-    ResultSet members = getResult("SELECT * FROM members WHERE clanID == "+clanID);
-    while (members.next()) {
 
+    //Gets the UUIDS of all the claims
+    Collection<UUID> claimIDs = new ArrayList<>();
+    ResultSet claims = getResult("SELECT claimID FROM claims WHERE clanID == "+clanID);
+    while (claims.next()) {
+      claimIDs.add(UUID.fromString(claims.getString("claimID")));
     }
 
-    return new Clan(clanID, clanName, clanDescription,  );
+    //Gets the UUIDS of all the members
+    Collection<UUID> memberIDs = new ArrayList<>();
+    ResultSet members = getResult("SELECT memberID FROM members WHERE clanID == "+clanID);
+    while (members.next()) {
+      memberIDs.add(UUID.fromString(members.getString("memberID")));
+    }
+
+    //Gets the UUIDS of all the members
+    Collection<UUID> permIDs = new ArrayList<>();
+    ResultSet perms = getResult("SELECT permID FROM perms WHERE clanID == "+clanID);
+    while (perms.next()) {
+      permIDs.add(UUID.fromString(perms.getString("permID")));
+    }
+
+    return new Clan(clanID, clanName, clanDescription, claimIDs ,memberIDs, permIDs);
 
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
@@ -263,10 +271,16 @@ public static @Nullable Claim getClaim(UUID claimID) {
 
     claimData.next();
 
-    String clanName = claimData.getString("name");
-    String clanDescription = claimData.getString("description");
+    String worldName = claimData.getString("worldName");
+    double X1 = claimData.getDouble("X1");
+    double X2 = claimData.getDouble("X2");
+    double Y1 = claimData.getDouble("Y1");
+    double Y2 = claimData.getDouble("Y2");
+    double Z1 = claimData.getDouble("Z1");
+    double Z2 = claimData.getDouble("Z2");
+    UUID clanID = UUID.fromString(claimData.getString("clanID"));
 
-    return new Claim()
+    return new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2);
 
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
@@ -274,6 +288,26 @@ public static @Nullable Claim getClaim(UUID claimID) {
     return null;
   }
 }
+
+public static @Nullable Perm getPerm(UUID permId) {
+  try (ResultSet permData = getResult(
+      "SELECT * FROM perms WHERE permID == "+permId.toString()
+  )) {
+
+    permData.next();
+
+    String permName = permData.getString("name");
+    String permDescription = permData.getString("description");
+
+    return new Perm(permId, permName, permDescription);
+
+  } catch (SQLException | IllegalArgumentException e) {
+    e.printStackTrace();
+    //TODO: remove this before release.
+    return null;
+  }
+}
+
 
 public static void registerMember(UUID memberID) {
   try (Connection connection = getDbConnection()) {
@@ -300,7 +334,7 @@ public static void createClan(Clan newClan) {
 
     //create the clan
     PreparedStatement clanCreate = dbConnection.prepareStatement(
-        "INSERT INTO clans (clanID, name, description) VALUES(?,?,?,?,?,?)");
+        "INSERT INTO clans (clanID, name, description) VALUES(?,?,?)");
 
     clanCreate.setString(1, newClan.getClanID().toString());
     clanCreate.setString(2, newClan.getName());

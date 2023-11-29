@@ -8,21 +8,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 
 import static me.tye.mine.Mine.loadedClans;
 
 public class Clan {
 
-private final UUID clanID;
+private final @NotNull UUID clanID;
 
-private String name;
-private String description;
+private @NotNull String name;
+private @NotNull String description;
 
-private Collection<UUID> clanClaims = new ArrayList<>();
-private Collection<UUID> clanMembers = new ArrayList<>();
-private Collection<UUID> clanPerms = new ArrayList<>();
+private @NotNull Collection<UUID> clanClaims = new ArrayList<>();
+private @NotNull Collection<UUID> clanMembers = new ArrayList<>();
+private @NotNull Collection<UUID> clanPerms = new ArrayList<>();
 
 
 /**
@@ -30,14 +29,14 @@ private Collection<UUID> clanPerms = new ArrayList<>();
  * @param clanID The ID of the clan to get.
  * @return The clan, or null if the clan doesn't exist.
  */
-public static @Nullable Clan getClan(UUID clanID) {
+public static @Nullable Clan getClan(@NotNull UUID clanID) {
   //If the clan is loaded then it gets the clan object from the HashMap.
   if (loadedClans.containsKey(clanID)) {
     return loadedClans.get(clanID);
   }
 
   //If the clan isn't loaded but exists, gets it from the database & loads it.
-  if (Database.memberExists(clanID)) {
+  if (Database.clanExists(clanID)) {
     Clan clan = Database.getClan(clanID);
     loadedClans.put(clanID, clan);
     return clan;
@@ -47,15 +46,15 @@ public static @Nullable Clan getClan(UUID clanID) {
   return null;
 }
 
-public static Clan createClan(@Nullable Claim firstClaim, @NotNull Member owner) throws InvalidClanCreationException {
-  if (firstClaim != null && firstClaim.isOverlapping()) {
-    throw new InvalidClanCreationException(Lang.claim_areaAlreadyClaimed.getResponse());
-  }
-
-  if (owner.isInClan()) {
+/**
+ Creates a new clan with the given member as the owner.
+ * @param creator The given member.
+ * @throws InvalidClanCreationException Thrown if the given member is already in a clan.
+ */
+public static void createClan(@NotNull Member creator) throws InvalidClanCreationException {
+  if (creator.isInClan()) {
     throw new InvalidClanCreationException(Lang.member_alreadyInClan.getResponse());
   }
-
 
   UUID clanID = UUID.randomUUID();
   //ensures that the UUID is unique
@@ -63,44 +62,57 @@ public static Clan createClan(@Nullable Claim firstClaim, @NotNull Member owner)
     clanID = UUID.randomUUID();
   }
 
-  String clanName = "The clan of "+owner.getPlayer().getName()+".";
-  String clanDescription = "The clan description of "+owner.getPlayer().getName()+".";
+  String clanName = "The clan of "+creator.getPlayer().getName()+".";
+  String clanDescription = "The clan description of "+creator.getPlayer().getName()+".";
 
-  Collection<Claim> claims = new ArrayList<>();
-  if (firstClaim != null) {
-    claims.add(firstClaim);
-  }
+  Clan createdClan = new Clan(clanID, clanName, clanDescription);
 
-
-  Clan clan = new Clan(clanID, clanName, clanDescription, claims, List.of(owner), List.of());
-  Database.createClan(clan);
-  loadedClans.put(clanID, clan);
-  return clan;
+  Database.createClan(createdClan);
 }
 
 
+/**
+ Creates a new clan & clan object.<br>
+ <b>This method is not intended for general use.</b> Please use {@link #getClan(UUID)} to get a clan or {@link #createClan(Member)} to create a clan.
+ * @param clanID The uuid of the new clan.
+ * @param clanName The name of the new clan.
+ * @param clanDescription The description of the new clan.
+ */
+public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clanDescription)  {
+  this.clanID = clanID;
+  this.name = clanName;
+  this.description = clanDescription;
+}
+
+/**
+ Creates a new clan object for an existing clan.<br>
+ <b>This method is not intended for general use.</b> Please use {@link #getClan(UUID)} to get a clan or {@link #createClan(Member)} to create a clan.
+ * @param clanID The uuid of the clan.
+ * @param clanName The name of the clan.
+ * @param clanDescription The description of the clan.
+ * @param clanClaims The claims of the clan.
+ * @param clanMembers The member of the clan.
+ * @param clanPerms The perms of the clan.
+ */
 public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clanDescription, @NotNull Collection<UUID> clanClaims, @NotNull Collection<UUID> clanMembers, @NotNull Collection<UUID> clanPerms)  {
   this.clanID = clanID;
   this.name = clanName;
   this.description = clanDescription;
-  this.clanClaims =  clanClaims;
-  this.clanMembers = clanMembers;
-  this.clanPerms = clanPerms;
 }
 
-public String getName() {
+public @NotNull String getName() {
   return name;
 }
 
-public String getDescription() {
+public @NotNull String getDescription() {
   return description;
 }
 
-public UUID getClanID() {
+public @NotNull UUID getClanID() {
   return clanID;
 }
 
-public ArrayList<Claim> getClanClaims() {
+public @NotNull ArrayList<Claim> getClanClaims() {
   ArrayList<Claim> claims = new ArrayList<>();
 
   clanClaims.forEach(uuid -> {
@@ -110,7 +122,7 @@ public ArrayList<Claim> getClanClaims() {
   return claims;
 }
 
-public ArrayList<Member> getClanMembers() {
+public @NotNull ArrayList<Member> getClanMembers() {
   ArrayList<Member> members = new ArrayList<>();
 
   clanMembers.forEach(uuid -> {
@@ -121,18 +133,18 @@ public ArrayList<Member> getClanMembers() {
   return members;
 }
 
-public ArrayList<Perms> getClanPerms() {
-  ArrayList<Perms> perms = new ArrayList<>();
+public @NotNull ArrayList<Perm> getClanPerms() {
+  ArrayList<Perm> perms = new ArrayList<>();
 
   clanPerms.forEach(uuid -> {
-    perms.add(Perms.getPerm(uuid));
+    perms.add(Perm.getPerm(uuid));
 
   });
 
   return perms;
 }
 
-public ArrayList<UUID> getMemberUUIDs() {
+public @NotNull Collection<UUID> getMemberUUIDs() {
   return clanMembers;
 }
 
