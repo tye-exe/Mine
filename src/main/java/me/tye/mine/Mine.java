@@ -41,6 +41,8 @@ public void onEnable() {
         throw new RuntimeException(e);
     }
 
+    Unloader.init();
+
     //Commands
     Objects.requireNonNull(getCommand("mine")).setExecutor(new Commands());
     Objects.requireNonNull(getCommand("mine")).setTabCompleter(new TabComplete());
@@ -59,6 +61,9 @@ public void onDisable() {
 
     //Reload support - If a reload happens when blocks are selected then they are restored.
     selections.values().forEach((Selection::restore));
+
+    //Reload support - destroys the unlaoder.
+    Unloader.terminate();
 }
 
 /**
