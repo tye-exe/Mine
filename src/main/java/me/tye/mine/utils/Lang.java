@@ -14,6 +14,10 @@ public enum Lang {
   pointer_confirmSelection,
   pointer_missingSelection,
 
+  member_alreadyInClan,
+
+  claim_areaAlreadyClaimed,
+
   excepts_invalidKey,
   excepts_fileCreation,
   excepts_fileRestore,
