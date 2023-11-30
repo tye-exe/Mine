@@ -14,7 +14,7 @@ public class Unloader implements Runnable {
 private static Thread unloader = null;
 
 /**
- Creates a new unloader thread. This thread checks the cache that stores loaded clans, claims, & members. Then removes any ones that are unloaded from that cache.
+ Creates a new unloader thread. This thread checks the cache that stores loaded clans, claims, members, & perms. Then removes any ones that are unloaded from that cache.
  */
 public static void init() {
   if (unloader != null) return;
@@ -26,6 +26,8 @@ public static void init() {
  Stops the unloader thread & then assigns it to null for garbage collection.
  */
 public static void terminate() {
+  if (unloader == null) return;
+
   unloader.interrupt();
   unloader = null;
 }
@@ -61,6 +63,13 @@ public void run() {
       onlineMembers.remove(members.get(i).getMemberID());
     }
 
+    //can't be enhanced for due to concurrent modification exception.
+//    List<Perm> perms = new ArrayList<>(loadedPerms.values());
+//    for (int i = 0; i < perms.size(); i++) {
+//      if (perms.get(i).isLoaded()) continue;
+//
+//      loadedPerms.remove(perms.get(i).getPermID());
+//    }
   }
 
 }

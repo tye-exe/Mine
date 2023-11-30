@@ -94,7 +94,7 @@ private void createRequiredConfigs() {
     }
 
   try {
-        makeRequiredFile(new File(langFolder+File.separator+"eng.yml"), plugin.getResource("config.yml"), true);
+        makeRequiredFile(new File(langFolder+File.separator+"eng.yml"), plugin.getResource("lang/eng.yml"), true);
     } catch (IOException e) {
         throw new RuntimeException("\"" + new File(langFolder+File.separator+"eng.yml").getAbsolutePath() + "\" Couldn't be created. Please manually create this folder.", e);
     }
