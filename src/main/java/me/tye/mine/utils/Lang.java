@@ -16,8 +16,6 @@ public enum Lang {
 
   member_alreadyInClan,
 
-  claim_areaAlreadyClaimed,
-
   excepts_invalidKey,
   excepts_fileCreation,
   excepts_fileRestore,

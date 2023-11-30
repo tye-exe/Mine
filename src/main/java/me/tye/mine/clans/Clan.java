@@ -2,6 +2,7 @@ package me.tye.mine.clans;
 
 import me.tye.mine.Database;
 import me.tye.mine.errors.InvalidClanCreationException;
+import me.tye.mine.utils.Key;
 import me.tye.mine.utils.Lang;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +54,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
  */
 public static void createClan(@NotNull Member creator) throws InvalidClanCreationException {
   if (creator.isInClan()) {
-    throw new InvalidClanCreationException(Lang.member_alreadyInClan.getResponse());
+    throw new InvalidClanCreationException(Lang.member_alreadyInClan.getResponse(Key.member.replaceWith(creator.getPlayer().getName())));
   }
 
   UUID clanID = UUID.randomUUID();

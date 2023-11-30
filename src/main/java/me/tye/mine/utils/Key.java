@@ -3,7 +3,9 @@ package me.tye.mine.utils;
 public enum Key {
 
   key(),
-  filePath();
+  filePath(),
+
+  member();
 
 private String replaceWith = "";
 
