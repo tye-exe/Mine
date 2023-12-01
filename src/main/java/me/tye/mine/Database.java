@@ -87,8 +87,7 @@ public static void init() throws SQLException {
         CREATE TABLE IF NOT EXISTS members (
         memberID TEXT NOT NULL PRIMARY KEY,
               
-        permLevel TEXT,
-        defaultPerms TEXT NOT NULL,
+        clanPermID TEXT,
               
         clanID TEXT,
         FOREIGN KEY (clanID) REFERENCES clans (clanID) ON DELETE SET NULL
