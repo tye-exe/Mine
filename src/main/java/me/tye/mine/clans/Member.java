@@ -19,11 +19,11 @@ private @Nullable UUID clanID;
 
 
 /**
- Gets the member from a player UUID. If no member is found then a new one will be created for this player. Member objects are tied to players by their uuid.
+ Gets the member from a player UUID.
  * @param playerId The UUID of a player.
- * @return The Member class for this player.
+ * @return The Member class for this player, or null if the member can't be gotten form the database.
  */
-public static @NotNull Member getMember(@NotNull UUID playerId) {
+public static @Nullable Member getMember(@NotNull UUID playerId) {
   //If the player is a member & is online then gets the member object from the HashMap.
   if (onlineMembers.containsKey(playerId)) {
     return onlineMembers.get(playerId);
@@ -36,11 +36,16 @@ public static @NotNull Member getMember(@NotNull UUID playerId) {
     return member;
   }
 
-  //If the member doesn't exist, create a new one & load it.
+  return null;
+}
+
+/**
+ Creates a new member for the given player uuid. Member objects are tied to players by their uuid.
+ */
+public static void registerMember(@NotNull UUID playerId) {
   Member member = new Member(playerId, null, null);
   Database.registerMember(playerId);
   onlineMembers.put(playerId, member);
-  return member;
 }
 
 
