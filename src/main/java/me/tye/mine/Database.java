@@ -204,6 +204,8 @@ private static boolean exists(String column, String table, UUID uuid) {
 }
 
 public static @Nullable Member getMember(UUID memberID) {
+  if (!memberExists(memberID)) return null;
+
   try (ResultSet memberData = getResult(
       "SELECT * FROM members WHERE memberID == "+memberID.toString()
   )) {
@@ -223,6 +225,8 @@ public static @Nullable Member getMember(UUID memberID) {
 }
 
 public static @Nullable Clan getClan(UUID clanID) {
+  if (!clanExists(clanID)) return null;
+
   try (ResultSet clanData = getResult(
       "SELECT * FROM clan WHERE clanID == "+clanID.toString()
   )) {
@@ -264,6 +268,8 @@ public static @Nullable Clan getClan(UUID clanID) {
 }
 
 public static @Nullable Claim getClaim(UUID claimID) {
+  if (!claimExists(claimID)) return null;
+
   try (ResultSet claimData = getResult(
       "SELECT * FROM claim WHERE claimID == "+claimID.toString()
   )) {
@@ -289,6 +295,8 @@ public static @Nullable Claim getClaim(UUID claimID) {
 }
 
 public static @Nullable Perm getPerm(UUID permId) {
+  if (permExists(permId)) return null;
+
   try (ResultSet permData = getResult(
       "SELECT * FROM perms WHERE permID == "+permId.toString()
   )) {
