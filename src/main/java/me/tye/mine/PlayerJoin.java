@@ -12,6 +12,9 @@ public class PlayerJoin implements Listener {
 public static void playerJoin(PlayerJoinEvent e) {
   Player player = e.getPlayer();
 
-  Member.getMember(player.getUniqueId());
+
+  if (Database.memberExists(player.getUniqueId())) return;
+
+  Member.registerMember(player.getUniqueId());
 }
 }
