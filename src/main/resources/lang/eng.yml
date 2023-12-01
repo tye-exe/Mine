@@ -5,7 +5,10 @@ pointer:
 
 
 excepts:
-  invalidKey: "{key} is not a valid key for Mine!"
+  invalidLangKey: "{key} is not a valid lang key for Mine!\nThis error can be ignored as the invalid key will have no effect."
+  invalidConfigKey: "{key} is not a valid config key for Mine!\nThis error can be ignored as the invalid key will have no effect."
+  missingLangKey: "{key} could not be found in the lang file! Revering back to default."
+  missingConfigKey: "{key} could not be found in the config file! Revering back to default."
   fileCreation: "The file {filePath} could not be created."
   fileRestore: "Missing keys couldn't be appended to external file \"{filePath}\". Falling back to default values:"
   parseYaml: "Couldn't parse Yaml data from {filePath}. Falling back to default values (if present)."

@@ -5,8 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.HashMap;
 
-import static me.tye.mine.utils.Util.langFolder;
-import static me.tye.mine.utils.Util.plugin;
+import static me.tye.mine.utils.Util.*;
 
 public enum Lang {
 
@@ -16,7 +15,10 @@ public enum Lang {
 
   member_alreadyInClan,
 
-  excepts_invalidKey,
+  excepts_invalidLangKey,
+  excepts_invalidConfigKey,
+  excepts_missingLangKey,
+  excepts_missingConfigKey,
   excepts_fileCreation,
   excepts_fileRestore,
   excepts_parseYaml,
@@ -102,16 +104,29 @@ public static void load() {
   File externalFile = new File(langFolder.toPath()+File.separator+Configs.lang.getStringConfig()+".yml");
   HashMap<String,Object> externalYaml = Util.parseAndRepairExternalYaml(externalFile, resourcePath);
 
+  HashMap<Lang, String> userLangs = new HashMap<>();
+
+  //Gets the default keys that the user has entered.
   externalYaml.forEach((String key, Object value) -> {
     String formattedKey = key.replace('.', '_');
 
     //Logs an exception if the key doesn't exist.
     try {
-      langs.put(Lang.valueOf(formattedKey), value.toString());
+      userLangs.put(Lang.valueOf(formattedKey), value.toString());
     } catch (IllegalArgumentException e) {
-      Util.log.warning(Lang.excepts_invalidKey.getResponse(Key.key.replaceWith(key)));
+      Util.log.warning(Lang.excepts_invalidLangKey.getResponse(Key.key.replaceWith(key)));
     }
   });
+
+  //Warns the user about any lang keys they are missing.
+  for (Lang lang : langs.keySet()) {
+    if (userLangs.containsKey(lang)) continue;
+
+    String formattedKey = lang.toString().replace('.', '_');
+    log.warning(Lang.excepts_missingLangKey.getResponse(Key.key.replaceWith(formattedKey)));
+  }
+
+  langs.putAll(userLangs);
 }
 
 }
