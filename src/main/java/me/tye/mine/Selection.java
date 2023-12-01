@@ -179,7 +179,6 @@ public void restore() {
   }
 
   //Restores the outline of the selection area.
-  if (player == null) return;
   if (selectionOutline.isEmpty()) return;
 
   Collection<BlockState> refreshBlocks = new ArrayList<>();
