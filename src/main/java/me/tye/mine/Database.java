@@ -131,7 +131,7 @@ private static @NotNull ResultSet getResult(@NotNull String query) throws SQLExc
  * @param uuids The given uuids.
  * @return The where statement that will match all the uuids.
  */
-private static @NotNull String createWhere(String column, Collection<UUID> uuids) {
+private static @NotNull String createWhere(@NotNull String column, @NotNull Collection<UUID> uuids) {
   StringBuilder where = new StringBuilder("WHERE ");
 
   uuids.forEach(uuid -> {
@@ -150,7 +150,7 @@ private static @NotNull String createWhere(String column, Collection<UUID> uuids
  * @param clanID The UUID to check.
  * @return True if the clan exists or if there was an error interacting with the database.
  */
-public static boolean clanExists(UUID clanID) {
+public static boolean clanExists(@NotNull UUID clanID) {
   return exists("clanID", "clans", clanID);
 }
 
@@ -159,7 +159,7 @@ public static boolean clanExists(UUID clanID) {
  * @param claimID The UUID to check.
  * @return True if the claim exists or if there was an error interacting with the database.
  */
-public static boolean claimExists(UUID claimID) {
+public static boolean claimExists(@NotNull UUID claimID) {
   return exists("claimID", "claims", claimID);
 }
 
@@ -168,7 +168,7 @@ public static boolean claimExists(UUID claimID) {
  * @param memberID The UUID to check.
  * @return True if the member exists or if there was an error interacting with the database.
  */
-public static boolean memberExists(UUID memberID) {
+public static boolean memberExists(@NotNull UUID memberID) {
   return exists("memberID", "members", memberID);
 }
 
@@ -177,7 +177,7 @@ public static boolean memberExists(UUID memberID) {
  * @param permID The UUID to check.
  * @return True if the perm exists or if there was an error interacting with the database.
  */
-public static boolean permExists(UUID permID) {
+public static boolean permExists(@NotNull UUID permID) {
   return exists("permID", "perms", permID);
 }
 
@@ -189,9 +189,9 @@ public static boolean permExists(UUID permID) {
  * @param uuid The given uuid.
  * @return True if the uuid is taken or if there was an error interacting with the database.
  */
-private static boolean exists(String column, String table, UUID uuid) {
+private static boolean exists(@NotNull String column, @NotNull String table, @NotNull UUID uuid) {
   try (ResultSet uuidIsTaken = getResult(
-      "SELECT "+column+" FROM "+table+" WHERE "+column+" == "+uuid.toString()
+      "SELECT "+column+" FROM "+table+" WHERE "+column+" == "+uuid
   )) {
 
     return !uuidIsTaken.next();
@@ -203,11 +203,17 @@ private static boolean exists(String column, String table, UUID uuid) {
   }
 }
 
-public static @Nullable Member getMember(UUID memberID) {
+
+/**
+ Gets a member from the database.
+ * @param memberID The uuid of the member.
+ * @return The member, if present. If the member doesn't exist or there was an error, null will be returned.
+ */
+public static @Nullable Member getMember(@NotNull UUID memberID) {
   if (!memberExists(memberID)) return null;
 
   try (ResultSet memberData = getResult(
-      "SELECT * FROM members WHERE memberID == "+memberID.toString()
+      "SELECT * FROM members WHERE memberID == "+memberID
   )) {
 
     memberData.next();
@@ -224,11 +230,16 @@ public static @Nullable Member getMember(UUID memberID) {
   }
 }
 
-public static @Nullable Clan getClan(UUID clanID) {
+/**
+ Gets a clan from the database.
+ * @param clanID The uuid of the clan.
+ * @return The clan, if present. If the clan doesn't exist or there was an error, null will be returned.
+ */
+public static @Nullable Clan getClan(@NotNull UUID clanID) {
   if (!clanExists(clanID)) return null;
 
   try (ResultSet clanData = getResult(
-      "SELECT * FROM clan WHERE clanID == "+clanID.toString()
+      "SELECT * FROM clan WHERE clanID == "+clanID
   )) {
 
     clanData.next();
@@ -267,11 +278,16 @@ public static @Nullable Clan getClan(UUID clanID) {
   }
 }
 
-public static @Nullable Claim getClaim(UUID claimID) {
+/**
+ Gets a claim from the database.
+ * @param claimID The uuid of the claim
+ * @return The claim, if present. If the claim doesn't exist or there was an error, null will be returned.
+ */
+public static @Nullable Claim getClaim(@NotNull UUID claimID) {
   if (!claimExists(claimID)) return null;
 
   try (ResultSet claimData = getResult(
-      "SELECT * FROM claim WHERE claimID == "+claimID.toString()
+      "SELECT * FROM claim WHERE claimID == "+claimID
   )) {
 
     claimData.next();
@@ -294,11 +310,16 @@ public static @Nullable Claim getClaim(UUID claimID) {
   }
 }
 
-public static @Nullable Perm getPerm(UUID permId) {
+/**
+ Gets a perm from the database.
+ * @param permId The uuid of the perm to get
+ * @return The perm, if present. If the perm doesn't exist or there was an error, null will be returned.
+ */
+public static @Nullable Perm getPerm(@NotNull UUID permId) {
   if (permExists(permId)) return null;
 
   try (ResultSet permData = getResult(
-      "SELECT * FROM perms WHERE permID == "+permId.toString()
+      "SELECT * FROM perms WHERE permID == "+permId
   )) {
 
     permData.next();
@@ -315,8 +336,12 @@ public static @Nullable Perm getPerm(UUID permId) {
   }
 }
 
-
-public static void registerMember(UUID memberID) {
+/**
+ Writes a member to the database.<br>
+ <b>This method will overwrite the current entry for a member with this uuid, if it exists.</b> Use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
+ * @param memberID The uuid of the member to create.
+ */
+public static void registerMember(@NotNull UUID memberID) {
   try (Connection connection = getDbConnection()) {
 
     PreparedStatement statement = connection.prepareStatement(
@@ -336,7 +361,12 @@ public static void registerMember(UUID memberID) {
   }
 }
 
-public static void createClan(Clan newClan) {
+/**
+ Writes a clan to the database.<br>
+ <b>This method will overwrite the current entry for a clan with this uuid, if it exists.</b> Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
+ * @param newClan The new clan to create.
+ */
+public static void createClan(@NotNull Clan newClan) {
   try (Connection dbConnection = getDbConnection()) {
 
     //create the clan
