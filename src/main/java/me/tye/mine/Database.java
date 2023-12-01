@@ -420,4 +420,30 @@ public static void createClan(@NotNull Clan newClan) {
     //TODO: remove when confirmed working.
   }
 }
+
+public static void createClaim(@NotNull Claim newClaim) {
+  try (Connection dbConnection = getDbConnection()) {
+    PreparedStatement statement = dbConnection.prepareStatement("""
+        INSERT INTO claims (claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, clanID) VALUES(?,?,?,?,?,?,?,?,?)
+        """);
+
+    statement.setString(1, newClaim.getClaimID().toString());
+    statement.setString(2, newClaim.getWorldName());
+    statement.setDouble(3, newClaim.getX1());
+    statement.setDouble(4, newClaim.getX2());
+    statement.setDouble(5, newClaim.getY1());
+    statement.setDouble(6, newClaim.getY2());
+    statement.setDouble(7, newClaim.getZ1());
+    statement.setDouble(8, newClaim.getZ2());
+    statement.setString(9, newClaim.getClaimID().toString());
+
+    statement.executeUpdate();
+
+    dbConnection.commit();
+
+  } catch (SQLException e) {
+    e.printStackTrace();
+    //TODO:remove when confirmed working.
+  }
+}
 }

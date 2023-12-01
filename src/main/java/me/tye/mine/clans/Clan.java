@@ -1,9 +1,6 @@
 package me.tye.mine.clans;
 
 import me.tye.mine.Database;
-import me.tye.mine.errors.InvalidClanCreationException;
-import me.tye.mine.utils.Key;
-import me.tye.mine.utils.Lang;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,14 +45,13 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
 }
 
 /**
- Creates a new clan with the given member as the owner.
+ Creates a new clan with the given member as the owner.<br>
+ <b>If the member is already in a clan then this method will return null.</b>
  * @param creator The given member.
- * @throws InvalidClanCreationException Thrown if the given member is already in a clan.
+ * @return The new clan, or null if the member is already in a clan.
  */
-public static void createClan(@NotNull Member creator) throws InvalidClanCreationException {
-  if (creator.isInClan()) {
-    throw new InvalidClanCreationException(Lang.member_alreadyInClan.getResponse(Key.member.replaceWith(creator.getPlayer().getName())));
-  }
+public static @Nullable Clan createClan(@NotNull Member creator) {
+  if (creator.isInClan()) return null;
 
   UUID clanID = UUID.randomUUID();
   //ensures that the UUID is unique
@@ -69,6 +65,8 @@ public static void createClan(@NotNull Member creator) throws InvalidClanCreatio
   Clan createdClan = new Clan(clanID, clanName, clanDescription);
 
   Database.createClan(createdClan);
+
+  return createdClan;
 }
 
 
@@ -100,6 +98,13 @@ public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clan
   this.name = clanName;
   this.description = clanDescription;
 }
+
+public void addClaim() {
+  new Claim()
+  Database.createClaim(claim);
+}
+
+
 
 public @NotNull String getName() {
   return name;

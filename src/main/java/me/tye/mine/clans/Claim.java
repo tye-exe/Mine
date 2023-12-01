@@ -160,4 +160,16 @@ public double getZ1() {
 public double getZ2() {
   return Z2;
 }
+
+public UUID getClanID() {
+  return clanID;
+}
+
+public UUID getClaimPerm() {
+  return claimPerm;
+}
+
+public int getClaimImportance() {
+  return claimImportance;
+}
 }

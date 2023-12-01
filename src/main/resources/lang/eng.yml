@@ -3,6 +3,8 @@ pointer:
   confirmSelection: "Drop this item again to confirm selection."
   missingSelection: "You need to have selected two blocks."
 
+database:
+  noMember: "{Member} couldn't be found in the database."
 
 excepts:
   invalidLangKey: "{key} is not a valid lang key for Mine!\nThis error can be ignored as the invalid key will have no effect."
