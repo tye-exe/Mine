@@ -149,7 +149,7 @@ private static @NotNull String createWhere(String column, Collection<UUID> uuids
 /**
  Checks if a clan with the given UUID already exists.
  * @param clanID The UUID to check.
- * @return True if the clan exists. False if doesn't, or if there was an error interacting with the database.
+ * @return True if the clan exists or if there was an error interacting with the database.
  */
 public static boolean clanExists(UUID clanID) {
   return exists("clanID", "clans", clanID);
@@ -158,7 +158,7 @@ public static boolean clanExists(UUID clanID) {
 /**
  Checks if a claim with the given UUID already exists.
  * @param claimID The UUID to check.
- * @return True if the claim exists. False if doesn't, or if there was an error interacting with the database.
+ * @return True if the claim exists or if there was an error interacting with the database.
  */
 public static boolean claimExists(UUID claimID) {
   return exists("claimID", "claims", claimID);
@@ -167,7 +167,7 @@ public static boolean claimExists(UUID claimID) {
 /**
  Checks if a member with the given UUID already exists.
  * @param memberID The UUID to check.
- * @return True if the member exists. False if doesn't, or if there was an error interacting with the database.
+ * @return True if the member exists or if there was an error interacting with the database.
  */
 public static boolean memberExists(UUID memberID) {
   return exists("memberID", "members", memberID);
@@ -176,7 +176,7 @@ public static boolean memberExists(UUID memberID) {
 /**
  Checks if a perm with the given UUID already exists.
  * @param permID The UUID to check.
- * @return True if the perm exists. False if doesn't, or if there was an error interacting with the database.
+ * @return True if the perm exists or if there was an error interacting with the database.
  */
 public static boolean permExists(UUID permID) {
   return exists("permID", "perms", permID);
@@ -188,7 +188,7 @@ public static boolean permExists(UUID permID) {
  * @param column The given column.
  * @param table The given table.
  * @param uuid The given uuid.
- * @return True if the uuid is taken. False if it wasn't, or if there was an error interacting with the database.
+ * @return True if the uuid is taken or if there was an error interacting with the database.
  */
 private static boolean exists(String column, String table, UUID uuid) {
   try (ResultSet uuidIsTaken = getResult(
@@ -200,7 +200,7 @@ private static boolean exists(String column, String table, UUID uuid) {
   } catch (SQLException e) {
     e.printStackTrace();
     //TODO: remove this before release.
-    return false;
+    return true;
   }
 }
 
