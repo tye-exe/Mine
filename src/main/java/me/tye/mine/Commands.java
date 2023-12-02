@@ -29,6 +29,29 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
     deletePointer(player);
   }
 
+  if (args[0].equals("purge")) {
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    //TODO:REMOVE
+    if (!(sender instanceof Player)) return true;
+    Player player = (Player) sender;
+
+    if (!player.isOp()) return true;
+
+    if (Database.purge()) {
+      player.sendMessage("Dropped all tables.");
+    } else {
+      player.sendMessage("See conzc.");
+    }
+  }
+
   return true;
 }
 

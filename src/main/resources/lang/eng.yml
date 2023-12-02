@@ -5,6 +5,7 @@ pointer:
 
 database:
   noMember: "{Member} couldn't be found in the database."
+  noClan: "The clan for {Member} couldn't be retrieved or created."
 
 excepts:
   invalidLangKey: "{key} is not a valid lang key for Mine!\nThis error can be ignored as the invalid key will have no effect."

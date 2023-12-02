@@ -13,8 +13,11 @@ public static void playerJoin(PlayerJoinEvent e) {
   Player player = e.getPlayer();
 
 
-  if (Database.memberExists(player.getUniqueId())) return;
+  if (Database.memberExists(player.getUniqueId())) {
+    Member.registerMember(player.getUniqueId());
+    return;
+  }
 
-  Member.registerMember(player.getUniqueId());
+  Member.createMember(player.getUniqueId());
 }
 }

@@ -88,9 +88,30 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
 
   if (!member.isInClan()) {
     Clan clan = Clan.createClan(member);
-    clan.
+
+    if (clan == null) {
+      player.sendMessage(Lang.database_noClan.getResponse(Key.member.replaceWith(player.getName())));
+      return true;
+    }
+
+    clan.addClaim(selection.getStartLoc(), selection.getEndLoc());
+    return true;
   }
 
+  UUID clanID = member.getClanID();
+  if (clanID == null) {
+    player.sendMessage(Lang.database_noClan.getResponse(Key.member.replaceWith(player.getName())));
+    return true;
+  }
+
+  Clan clan = Clan.getClan(clanID);
+  if (clan == null) {
+    player.sendMessage(Lang.database_noClan.getResponse(Key.member.replaceWith(player.getName())));
+    return true;
+  }
+
+  clan.addClaim(selection.getStartLoc(), selection.getEndLoc());
+  clan.save();
 
 
   Sounds.confirm(player);
