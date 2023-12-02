@@ -1,6 +1,7 @@
 package me.tye.mine.clans;
 
 import me.tye.mine.Database;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,6 +10,7 @@ import java.util.Collection;
 import java.util.UUID;
 
 import static me.tye.mine.Mine.loadedClans;
+import static me.tye.mine.Mine.onlineMembers;
 
 public class Clan {
 
@@ -45,6 +47,15 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
 }
 
 /**
+ Saves the changes made to the clan.
+ */
+public void save() {
+  loadedClans.put(clanID, this);
+  Database.updateClan(this);
+}
+
+
+/**
  Creates a new clan with the given member as the owner.<br>
  <b>If the member is already in a clan then this method will return null.</b>
  * @param creator The given member.
@@ -62,9 +73,11 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
   String clanName = "The clan of "+creator.getPlayer().getName()+".";
   String clanDescription = "The clan description of "+creator.getPlayer().getName()+".";
 
-  Clan createdClan = new Clan(clanID, clanName, clanDescription);
+  Clan createdClan = new Clan(clanID, creator.getMemberID(), clanName, clanDescription);
 
-  Database.createClan(createdClan);
+  Database.writeClan(createdClan);
+  //invalidate the member cache since the member is now in a clan.
+  onlineMembers.remove(creator.getMemberID());
 
   return createdClan;
 }
@@ -77,8 +90,9 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
  * @param clanName The name of the new clan.
  * @param clanDescription The description of the new clan.
  */
-public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clanDescription)  {
+public Clan(@NotNull UUID clanID, @NotNull UUID creatorID, @NotNull String clanName, @NotNull String clanDescription)  {
   this.clanID = clanID;
+  this.clanMembers.add(creatorID);
   this.name = clanName;
   this.description = clanDescription;
 }
@@ -97,11 +111,20 @@ public Clan(@NotNull UUID clanID, @NotNull String clanName, @NotNull String clan
   this.clanID = clanID;
   this.name = clanName;
   this.description = clanDescription;
+  this.clanClaims = clanClaims;
+  this.clanMembers = clanMembers;
+  this.clanPerms = clanPerms;
 }
 
-public void addClaim() {
-  new Claim()
+/**
+ Adds a new claim for this clan.
+ * @param cornerOne One corner of the claim.
+ * @param cornerTwo The second corner of the claim.
+ */
+public void addClaim(Location cornerOne, Location cornerTwo) {
+  Claim claim = new Claim(getClanID(), cornerOne.getWorld().getName(), cornerOne.getBlockX(), cornerTwo.getBlockX(), cornerOne.getBlockY(), cornerTwo.getBlockY(), cornerOne.getBlockZ(), cornerTwo.getBlockZ());
   Database.createClaim(claim);
+  clanClaims.add(claim.getClaimID());
 }
 
 
