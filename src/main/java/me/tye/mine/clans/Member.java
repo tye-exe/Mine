@@ -42,10 +42,21 @@ public static @Nullable Member getMember(@NotNull UUID playerId) {
 /**
  Creates a new member for the given player uuid. Member objects are tied to players by their uuid.
  */
-public static void registerMember(@NotNull UUID playerId) {
+public static void createMember(@NotNull UUID playerId) {
   Member member = new Member(playerId, null, null);
-  Database.registerMember(playerId);
+  Database.createMember(playerId);
   onlineMembers.put(playerId, member);
+}
+
+/**
+ If the given ID is of an existing member, then put the member into the cache.
+ * @param memberID The uuid of the member.
+ */
+public static void registerMember(@NotNull UUID memberID) {
+  Member member = Database.getMember(memberID);
+  if (member == null) return;
+
+  onlineMembers.put(memberID, member);
 }
 
 
