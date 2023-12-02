@@ -456,7 +456,7 @@ public static void createMember(@NotNull UUID memberID) {
 
 /**
  Writes a clan to the database.<br>
- <b>This method will overwrite the current entry for a clan with this uuid, if it exists.</b> Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
+ <b>This method will throw an error if the clan already exists.</b> Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
  * @param newClan The new clan to create.
  */
 public static void writeClan(@NotNull Clan newClan) {
@@ -499,6 +499,7 @@ public static void writeClan(@NotNull Clan newClan) {
       claimCreate.executeUpdate();
     }
 
+    dbConnection.commit();
     dbConnection.setAutoCommit(true);
 
   } catch (SQLException e) {
@@ -525,13 +526,104 @@ public static void createClaim(@NotNull Claim newClaim) {
     statement.setDouble(6, newClaim.getY2());
     statement.setDouble(7, newClaim.getZ1());
     statement.setDouble(8, newClaim.getZ2());
-    statement.setString(9, newClaim.getClaimID().toString());
+    statement.setString(9, newClaim.getClanID().toString());
 
     statement.executeUpdate();
 
   } catch (SQLException e) {
     e.printStackTrace();
     //TODO:remove when confirmed working.
+    killConnection();
+  }
+}
+
+
+/**
+ Updates the database entry for an existing clan.
+ * @param updatedClan The clan to update.
+ */
+public static void updateClan(@NotNull Clan updatedClan) {
+  try {
+    Connection dbConnection = getDbConnection();
+    dbConnection.setAutoCommit(false);
+
+    //create the clan
+    PreparedStatement clanUpdate = dbConnection.prepareStatement("""
+            UPDATE clans SET
+            name = ?,
+            description = ?
+            WHERE clanID == ?;
+            """);
+
+    clanUpdate.setString(1, updatedClan.getName());
+    clanUpdate.setString(2, updatedClan.getDescription());
+    clanUpdate.setString(3, updatedClan.getClanID().toString());
+
+    clanUpdate.executeUpdate();
+
+
+    //adds the members to the clan.
+    Statement statement = dbConnection.createStatement();
+    statement.execute("UPDATE members SET clanID = \""+updatedClan.getClanID()+"\" "+createWhere("memberID", updatedClan.getMemberUUIDs()));
+
+
+
+    //adds all the claims to the clan.
+    for (Claim claim : updatedClan.getClanClaims()) {
+
+      //If the claim exist update it's values then continue.
+      if (claimExists(claim.getClaimID())) {
+        PreparedStatement claimUpdate = dbConnection.prepareStatement("""
+            UPDATE claims SET
+            worldName = ?,
+            X1 = ?,
+            X1 = ?,
+            Y1 = ?,
+            Y1 = ?,
+            Z1 = ?,
+            Z1 = ?,
+            Z2 = ?
+            WHERE claimID = ?
+            """);
+
+        claimUpdate.setString(1, claim.getWorldName());
+        claimUpdate.setDouble(2, claim.getX1());
+        claimUpdate.setDouble(3, claim.getX2());
+        claimUpdate.setDouble(4, claim.getY1());
+        claimUpdate.setDouble(5, claim.getY2());
+        claimUpdate.setDouble(6, claim.getZ1());
+        claimUpdate.setDouble(7, claim.getZ2());
+        claimUpdate.setString(8, updatedClan.getClanID().toString());
+        claimUpdate.setString(9, claim.getClaimID().toString());
+
+        clanUpdate.execute();
+        continue;
+      }
+
+      PreparedStatement claimCreate = dbConnection.prepareStatement("""
+            INSERT INTO claims (claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, clanID) VALUES(?,?,?,?,?,?,?,?,?)
+            """);
+
+      claimCreate.setString(1, claim.getClaimID().toString());
+      claimCreate.setString(2, claim.getWorldName());
+      claimCreate.setDouble(3, claim.getX1());
+      claimCreate.setDouble(4, claim.getX2());
+      claimCreate.setDouble(5, claim.getY1());
+      claimCreate.setDouble(6, claim.getY2());
+      claimCreate.setDouble(7, claim.getZ1());
+      claimCreate.setDouble(8, claim.getZ2());
+      claimCreate.setString(9, updatedClan.getClanID().toString());
+
+      claimCreate.executeUpdate();
+    }
+
+    dbConnection.commit();
+    dbConnection.setAutoCommit(true);
+
+  } catch (SQLException e) {
+    e.printStackTrace();
+    //TODO: remove when confirmed working.
+    killConnection();
   }
 }
 }
