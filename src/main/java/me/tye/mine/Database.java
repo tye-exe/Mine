@@ -125,6 +125,52 @@ private static @NotNull Connection getDbConnection() throws SQLException {
   return dbConnection;
 }
 
+ private static void killConnection() {
+  try {
+    dbConnection.setAutoCommit(false);
+    dbConnection.commit();
+    dbConnection.close();
+  } catch (SQLException e) {
+    e.printStackTrace();
+
+    //TODO: REMOVE
+  }
+}
+
+/**
+ <b>DO NOT USE THIS METHOD.</b><br>
+ This method will remove all the data from the database.<br>
+ <br>
+ This is intended for development only.
+ @return True if the tables were dropped.
+ */
+public static boolean purge() {
+  try {
+    killConnection();
+
+    Connection newConnection = getDbConnection();
+    newConnection.setAutoCommit(false);
+
+    Statement statement = newConnection.createStatement();
+    statement.execute("DROP TABLE clans");
+    statement.execute("DROP TABLE members");
+    statement.execute("DROP TABLE perms");
+    statement.execute("DROP TABLE claims");
+
+    newConnection.commit();
+    newConnection.close();
+
+    initiated = false;
+    init();
+
+    return true;
+  } catch (SQLException e) {
+    e.printStackTrace();
+
+    return false;
+  }
+}
+
 
 /**
  Gets the result of the given query from the database.
@@ -227,6 +273,7 @@ private static boolean exists(@NotNull String column, @NotNull String table, @No
   } catch (SQLException e) {
     e.printStackTrace();
     //TODO: remove this before release.
+    killConnection();
     return true;
   }
 }
@@ -266,6 +313,7 @@ public static @Nullable Member getMember(@NotNull UUID memberID) {
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
+    killConnection();
     return null;
   }
 }
@@ -314,6 +362,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
+    killConnection();
     return null;
   }
 }
@@ -327,7 +376,7 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
   if (!claimExists(claimID)) return null;
 
   try (ResultSet claimData = getResult(
-      "SELECT * FROM claim WHERE \"claimID\" == \""+claimID+"\";"
+      "SELECT * FROM claims WHERE \"claimID\" == \""+claimID+"\";"
   )) {
 
     claimData.next();
@@ -346,6 +395,7 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
+    killConnection();
     return null;
   }
 }
@@ -372,6 +422,7 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) {
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
     //TODO: remove this before release.
+    killConnection();
     return null;
   }
 }
@@ -399,6 +450,7 @@ public static void createMember(@NotNull UUID memberID) {
   } catch (SQLException e) {
     e.printStackTrace();
     //TODO: remove when confirmed working.
+    killConnection();
   }
 }
 
@@ -452,6 +504,7 @@ public static void writeClan(@NotNull Clan newClan) {
   } catch (SQLException e) {
     e.printStackTrace();
     //TODO: remove when confirmed working.
+    killConnection();
   }
 }
 
