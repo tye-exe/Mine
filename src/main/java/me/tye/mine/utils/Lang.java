@@ -15,6 +15,8 @@ public enum Lang {
 
   member_alreadyInClan,
 
+  database_noMember,
+
   excepts_invalidLangKey,
   excepts_invalidConfigKey,
   excepts_missingLangKey,

@@ -1,6 +1,9 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Clan;
+import me.tye.mine.clans.Member;
 import me.tye.mine.utils.Identifier;
+import me.tye.mine.utils.Key;
 import me.tye.mine.utils.Lang;
 import me.tye.mine.utils.Sounds;
 import org.bukkit.entity.Item;
@@ -72,9 +75,22 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
     return false;
   }
 
-  selections.remove(playerId).restore();
   pointerDrop.remove(playerId);
+
+  Member member = Member.getMember(playerId);
+  if (member == null) {
+    player.sendMessage(Lang.database_noMember.getResponse(Key.member.replaceWith(player.getName())));
+    return false;
+  }
+
+  selections.remove(playerId).restore();
   droppedItem.remove();
+
+  if (!member.isInClan()) {
+    Clan clan = Clan.createClan(member);
+    clan.
+  }
+
 
 
   Sounds.confirm(player);

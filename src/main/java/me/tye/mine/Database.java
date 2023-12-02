@@ -33,8 +33,6 @@ public static void init() throws SQLException {
 
   dbConnection = DriverManager.getConnection(databaseUrl);
 
-  dbConnection.setAutoCommit(false);
-
   //Create default tables;
   String clanTable = """
         CREATE TABLE IF NOT EXISTS clans (
@@ -97,21 +95,36 @@ public static void init() throws SQLException {
 
 
   Statement statement = dbConnection.createStatement();
+  dbConnection.setAutoCommit(false);
   statement.execute(clanTable);
   statement.execute(claimsTable);
   statement.execute(memberTable);
   statement.execute(PermsTable);
-
   dbConnection.commit();
+  dbConnection.setAutoCommit(true);
 
   initiated = true;
 }
 
-
+/**
+ Gets the connection to the database.<br>
+ <b>Don't use this method with auto closable. The connection to the database should stay open.</b>
+ * @return The connection to the database.
+ * @throws SQLException If a connection to the database couldn't be established.
+ */
 private static @NotNull Connection getDbConnection() throws SQLException {
-  dbConnection.setAutoCommit(false);
+  //Attempts to reconnect to the database if it has lost connection
+  if (dbConnection.isClosed()) {
+    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
+
+    String databaseUrl = "jdbc:sqlite:" + databasePath;
+
+    dbConnection = DriverManager.getConnection(databaseUrl);
+  }
+
   return dbConnection;
 }
+
 
 /**
  Gets the result of the given query from the database.
@@ -125,24 +138,41 @@ private static @NotNull ResultSet getResult(@NotNull String query) throws SQLExc
   return statement.executeQuery(query);
 }
 
+
+/**
+ Checks if the database has a response for a query.
+ * @param query The given query.
+ * @return True if the database responded with a populated result set. False otherwise.
+ * @throws SQLException If there was an error querying the database.
+ */
+private static boolean hasResult(@NotNull String query) throws SQLException {
+  ResultSet result = getResult(query);
+
+  return result.next();
+}
+
 /**
  Creates a where statement that matches all the given uuids in the given column.
  * @param column The given column.
- * @param uuids The given uuids.
+ * @param uuids The given uuids. This should <b>not</b> be empty.
  * @return The where statement that will match all the uuids.
  */
 private static @NotNull String createWhere(@NotNull String column, @NotNull Collection<UUID> uuids) {
   StringBuilder where = new StringBuilder("WHERE ");
 
-  uuids.forEach(uuid -> {
+  for (UUID uuid : uuids) {
     String stringUUID = uuid.toString();
-    where.append(column)
+    where.append("\"")
+         .append(column)
+         .append("\"")
          .append(" == ")
+         .append("\"")
          .append(stringUUID)
+         .append("\"")
          .append(" OR ");
-  });
+  }
 
-  return where.substring(where.length()-4);
+  return where.substring(0, where.length()-4);
 }
 
 /**
@@ -190,11 +220,9 @@ public static boolean permExists(@NotNull UUID permID) {
  * @return True if the uuid is taken or if there was an error interacting with the database.
  */
 private static boolean exists(@NotNull String column, @NotNull String table, @NotNull UUID uuid) {
-  try (ResultSet uuidIsTaken = getResult(
-      "SELECT "+column+" FROM "+table+" WHERE "+column+" == "+uuid
-  )) {
+  try {
 
-    return !uuidIsTaken.next();
+    return hasResult("SELECT "+column+" FROM "+table+" WHERE \""+column+"\" == \""+uuid+"\";");
 
   } catch (SQLException e) {
     e.printStackTrace();
@@ -213,13 +241,25 @@ public static @Nullable Member getMember(@NotNull UUID memberID) {
   if (!memberExists(memberID)) return null;
 
   try (ResultSet memberData = getResult(
-      "SELECT * FROM members WHERE memberID == "+memberID
+      "SELECT * FROM members WHERE \"memberID\" == \""+memberID+"\";"
   )) {
 
     memberData.next();
 
-    UUID clanID = UUID.fromString(memberData.getString("clanID"));
-    UUID clanPermID = UUID.fromString(memberData.getString("clanPermID"));
+    String rawClanID = memberData.getString("clanID");
+    String rawClanPermID = memberData.getString("clanPermID");
+
+    UUID clanID = null;
+    UUID clanPermID = null;
+
+
+    if (rawClanID != null) {
+      clanID = UUID.fromString(rawClanID);
+    }
+
+    if (rawClanPermID != null) {
+      clanPermID = UUID.fromString(rawClanPermID);
+    }
 
     return new Member(memberID, clanID, clanPermID);
 
@@ -239,7 +279,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
   if (!clanExists(clanID)) return null;
 
   try (ResultSet clanData = getResult(
-      "SELECT * FROM clan WHERE clanID == "+clanID
+      "SELECT * FROM clans WHERE \"clanID\" == \""+clanID+"\";"
   )) {
 
     clanData.next();
@@ -250,21 +290,21 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
 
     //Gets the UUIDS of all the claims
     Collection<UUID> claimIDs = new ArrayList<>();
-    ResultSet claims = getResult("SELECT claimID FROM claims WHERE clanID == "+clanID);
+    ResultSet claims = getResult("SELECT claimID FROM claims WHERE \"clanID\" == \""+clanID+"\";");
     while (claims.next()) {
       claimIDs.add(UUID.fromString(claims.getString("claimID")));
     }
 
     //Gets the UUIDS of all the members
     Collection<UUID> memberIDs = new ArrayList<>();
-    ResultSet members = getResult("SELECT memberID FROM members WHERE clanID == "+clanID);
+    ResultSet members = getResult("SELECT memberID FROM members WHERE \"clanID\" == \""+clanID+"\";");
     while (members.next()) {
       memberIDs.add(UUID.fromString(members.getString("memberID")));
     }
 
     //Gets the UUIDS of all the members
     Collection<UUID> permIDs = new ArrayList<>();
-    ResultSet perms = getResult("SELECT permID FROM perms WHERE clanID == "+clanID);
+    ResultSet perms = getResult("SELECT permID FROM perms WHERE \"clanID\" == \""+clanID+"\";");
     while (perms.next()) {
       permIDs.add(UUID.fromString(perms.getString("permID")));
     }
@@ -287,7 +327,7 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
   if (!claimExists(claimID)) return null;
 
   try (ResultSet claimData = getResult(
-      "SELECT * FROM claim WHERE claimID == "+claimID
+      "SELECT * FROM claim WHERE \"claimID\" == \""+claimID+"\";"
   )) {
 
     claimData.next();
@@ -319,7 +359,7 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) {
   if (permExists(permId)) return null;
 
   try (ResultSet permData = getResult(
-      "SELECT * FROM perms WHERE permID == "+permId
+      "SELECT * FROM perms WHERE \"permID\" == \""+permId+"\";"
   )) {
 
     permData.next();
@@ -341,10 +381,12 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) {
  <b>This method will overwrite the current entry for a member with this uuid, if it exists.</b> Use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
  * @param memberID The uuid of the member to create.
  */
-public static void registerMember(@NotNull UUID memberID) {
-  try (Connection connection = getDbConnection()) {
+public static void createMember(@NotNull UUID memberID) {
+  try {
+    Connection dbConnection = getDbConnection();
+    dbConnection.setAutoCommit(true);
 
-    PreparedStatement statement = connection.prepareStatement(
+    PreparedStatement statement = dbConnection.prepareStatement(
         "INSERT INTO members (memberID, clanID, clanPermID) VALUES(?,?,?)"
     );
 
@@ -353,7 +395,6 @@ public static void registerMember(@NotNull UUID memberID) {
     statement.setNull(3, Types.VARCHAR);
 
     statement.execute();
-    connection.commit();
 
   } catch (SQLException e) {
     e.printStackTrace();
@@ -366,8 +407,10 @@ public static void registerMember(@NotNull UUID memberID) {
  <b>This method will overwrite the current entry for a clan with this uuid, if it exists.</b> Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
  * @param newClan The new clan to create.
  */
-public static void createClan(@NotNull Clan newClan) {
-  try (Connection dbConnection = getDbConnection()) {
+public static void writeClan(@NotNull Clan newClan) {
+  try {
+    Connection dbConnection = getDbConnection();
+    dbConnection.setAutoCommit(false);
 
     //create the clan
     PreparedStatement clanCreate = dbConnection.prepareStatement(
@@ -381,17 +424,8 @@ public static void createClan(@NotNull Clan newClan) {
 
 
     //adds the members to the clan.
-    PreparedStatement memberAssign = dbConnection.prepareStatement("""
-    UPDATE members
-    SET clanID = ?
-    ?
-    """
-    );
-
-    memberAssign.setString(1, newClan.getClanID().toString());
-    //TODO: check that this works.
-    memberAssign.setString(2, createWhere("memberID", newClan.getMemberUUIDs()));
-    memberAssign.executeUpdate();
+    Statement statement = dbConnection.createStatement();
+    statement.execute("UPDATE members SET clanID = \""+newClan.getClanID()+"\" "+createWhere("memberID", newClan.getMemberUUIDs()));
 
 
     //adds all the claims to the clan.
@@ -413,11 +447,38 @@ public static void createClan(@NotNull Clan newClan) {
       claimCreate.executeUpdate();
     }
 
-    dbConnection.commit();
+    dbConnection.setAutoCommit(true);
 
   } catch (SQLException e) {
     e.printStackTrace();
     //TODO: remove when confirmed working.
+  }
+}
+
+public static void createClaim(@NotNull Claim newClaim) {
+  try {
+    Connection dbConnection = getDbConnection();
+    dbConnection.setAutoCommit(true);
+
+    PreparedStatement statement = dbConnection.prepareStatement("""
+        INSERT INTO claims (claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, clanID) VALUES(?,?,?,?,?,?,?,?,?)
+        """);
+
+    statement.setString(1, newClaim.getClaimID().toString());
+    statement.setString(2, newClaim.getWorldName());
+    statement.setDouble(3, newClaim.getX1());
+    statement.setDouble(4, newClaim.getX2());
+    statement.setDouble(5, newClaim.getY1());
+    statement.setDouble(6, newClaim.getY2());
+    statement.setDouble(7, newClaim.getZ1());
+    statement.setDouble(8, newClaim.getZ2());
+    statement.setString(9, newClaim.getClaimID().toString());
+
+    statement.executeUpdate();
+
+  } catch (SQLException e) {
+    e.printStackTrace();
+    //TODO:remove when confirmed working.
   }
 }
 }

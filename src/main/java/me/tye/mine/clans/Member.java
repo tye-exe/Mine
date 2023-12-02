@@ -78,4 +78,12 @@ public @NotNull OfflinePlayer getPlayer() {
 public @NotNull UUID getMemberID() {
   return memberID;
 }
+
+public @Nullable UUID getClanPermID() {
+  return clanPermID;
+}
+
+public @Nullable UUID getClanID() {
+  return clanID;
+}
 }
