@@ -289,7 +289,7 @@ public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNu
   missingPairsMap.forEach((String key, Object value) -> {
     missingPairs.append(key)
                 .append(": \"")
-                .append(reserveEscapeChars(value))
+                .append(preserveEscapedQuotes(value))
                 .append("\"\n");
   });
 
@@ -319,7 +319,7 @@ public static @NotNull HashMap<String, Object> parseAndRepairExternalYaml(@NotNu
  * @param value The object to get the string from.
  * @return The correct string from the given object.
  */
-private static String reserveEscapeChars(Object value) {
+private static String preserveEscapedQuotes(Object value) {
   char[] valueCharArray = value.toString().toCharArray();
   StringBuilder correctString = new StringBuilder();
 
