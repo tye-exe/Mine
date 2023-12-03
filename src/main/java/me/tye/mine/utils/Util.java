@@ -324,15 +324,9 @@ private static String reserveEscapeChars(Object value) {
   StringBuilder correctString = new StringBuilder();
 
 
-  for (int i = 0; i < valueCharArray.length; i++) {
-    //if it's the start of end " char then add it anyway.
-    if (i == 0 || i == valueCharArray.length - 1) {
-      correctString.append(valueCharArray[i]);
-      continue;
-    }
-
-    if (valueCharArray[i] != '"') {
-      correctString.append(valueCharArray[i]);
+  for (char character : valueCharArray) {
+    if (character != '"') {
+      correctString.append(character);
       continue;
     }
 
