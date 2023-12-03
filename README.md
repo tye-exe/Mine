@@ -13,8 +13,8 @@ This item can be obtained by using the "/. pointer" [command](#commands).
 Left-clicking with the pointer will set a corner of your claim. Right-clicking will set the other corner. Clicking again will change the selected block.  
 When a block is selected it will change to a marker block & light up. When two or more blocks are selected an outline of Red Glass will be rendered along the edges of the selected area.
 
-## Goals:
-- Claim an area.
+## FutureGoals:
+- ~~Claim an area.~~
 - Config for the max & min amount of blocks claimable.
 - Config for the max amount of claims for players (probably will have a choice between num of claims AND/OR max claimable blocks).
 - Above config but for players with certain perms only.
