@@ -93,6 +93,16 @@ public static void init() throws SQLException {
         ) WITHOUT ROWID;
         """;
 
+  String claimedChunks = """
+        CREATE TABLE IF NOT EXISTS claimedChunks (
+        
+        claimID TEXT NOT NULL,
+        chunkKey INTEGER NOT NULL,
+        
+        FOREIGN KEY (claimID) REFERENCES claims (claimID) ON DELETE CASCADE
+        );
+        """;
+
 
   Statement statement = dbConnection.createStatement();
   dbConnection.setAutoCommit(false);
@@ -125,7 +135,7 @@ private static @NotNull Connection getDbConnection() throws SQLException {
   return dbConnection;
 }
 
- private static void killConnection() {
+private static void killConnection() {
   try {
     dbConnection.setAutoCommit(false);
     dbConnection.commit();
