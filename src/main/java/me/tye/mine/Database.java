@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.UUID;
 
 public class Database {
@@ -400,7 +401,20 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
     double Z2 = claimData.getDouble("Z2");
     UUID clanID = UUID.fromString(claimData.getString("clanID"));
 
-    return new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2);
+
+    //Gets all the chunks that this claim is in
+    try (ResultSet chunks = getResult(
+        "SELECT chunkKey FROM claimedChunks WHERE \"claimID\" == \""+claimID+"\""
+    )) {
+
+      HashSet<Long> claimInChunks = new HashSet<>();
+
+      while (chunks.next()) {
+        claimInChunks.add(chunks.getLong("chunkKey"));
+      }
+
+      return new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, claimInChunks);
+    }
 
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
@@ -522,23 +536,36 @@ public static void writeClan(@NotNull Clan newClan) {
 public static void createClaim(@NotNull Claim newClaim) {
   try {
     Connection dbConnection = getDbConnection();
-    dbConnection.setAutoCommit(true);
+    dbConnection.setAutoCommit(false);
 
-    PreparedStatement statement = dbConnection.prepareStatement("""
+    PreparedStatement createClaim = dbConnection.prepareStatement("""
         INSERT INTO claims (claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, clanID) VALUES(?,?,?,?,?,?,?,?,?)
         """);
 
-    statement.setString(1, newClaim.getClaimID().toString());
-    statement.setString(2, newClaim.getWorldName());
-    statement.setDouble(3, newClaim.getX1());
-    statement.setDouble(4, newClaim.getX2());
-    statement.setDouble(5, newClaim.getY1());
-    statement.setDouble(6, newClaim.getY2());
-    statement.setDouble(7, newClaim.getZ1());
-    statement.setDouble(8, newClaim.getZ2());
-    statement.setString(9, newClaim.getClanID().toString());
+    createClaim.setString(1, newClaim.getClaimID().toString());
+    createClaim.setString(2, newClaim.getWorldName());
+    createClaim.setDouble(3, newClaim.getX1());
+    createClaim.setDouble(4, newClaim.getX2());
+    createClaim.setDouble(5, newClaim.getY1());
+    createClaim.setDouble(6, newClaim.getY2());
+    createClaim.setDouble(7, newClaim.getZ1());
+    createClaim.setDouble(8, newClaim.getZ2());
+    createClaim.setString(9, newClaim.getClanID().toString());
 
-    statement.executeUpdate();
+    createClaim.executeUpdate();
+
+
+    for (Long chunkKey : newClaim.getChunkKeys()) {
+      PreparedStatement claimedChunks = dbConnection.prepareStatement("""
+        INSERT INTO claimedChunks (claimID, chunkKey) VALUES(?,?)
+        """);
+
+      claimedChunks.setString(1, newClaim.getClaimID().toString());
+      claimedChunks.setLong(2, chunkKey);
+      claimedChunks.executeUpdate();
+    }
+
+    dbConnection.commit();
 
   } catch (SQLException e) {
     e.printStackTrace();

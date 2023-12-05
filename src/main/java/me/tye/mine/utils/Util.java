@@ -16,10 +16,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -337,4 +334,98 @@ private static String preserveEscapedQuotes(Object value) {
   return correctString.toString();
 }
 
+
+/**
+ Gets the chunk keys that would be inside a rectangle drawn from the two corners given.
+ * @param cornerOne One given corner.
+ * @param cornerTwo The other given corner.
+ * @return The chunk keys of the chunks are partially or fully within the rectangle.
+ */
+public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location cornerOne, @NotNull Location cornerTwo) {
+  HashSet<Long> coveredChunkKeys = new HashSet<>();
+
+  coveredChunkKeys.add(cornerOne.getChunk().getChunkKey());
+  coveredChunkKeys.add(cornerTwo.getChunk().getChunkKey());
+
+  int oneX = cornerOne.getBlockX();
+  int oneZ = cornerOne.getBlockZ();
+
+  int twoX = cornerTwo.getBlockX();
+  int twoZ = cornerTwo.getBlockZ();
+
+
+  Location cornerClone = cornerOne.clone();
+
+  //Varies which way the loops will iterate biased on the locations positions relative to each other.
+  if (twoX > oneX && twoZ > oneZ) {
+
+    //Adds all covered chunks in the z direction.
+    while (cornerClone.getBlockZ() < twoZ) {
+
+      //Adds all covered chunks in the x direction.
+      while (cornerClone.getBlockX() < twoX) {
+        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+        cornerClone.add(16, 0, 0);
+      }
+
+      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+      cornerClone.add(0, 0, 16);
+    }
+
+  }
+
+  else if (twoX < oneX && twoZ > oneZ) {
+
+    //Adds all covered chunks in the z direction.
+    while (cornerClone.getBlockZ() < twoZ) {
+
+      //Adds all covered chunks in the x direction.
+      while (cornerClone.getBlockX() > twoX) {
+        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+        cornerClone.subtract(16, 0, 0);
+      }
+
+      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+      cornerClone.add(0, 0, 16);
+    }
+
+  }
+
+  else if (twoX < oneX && twoZ < oneZ) {
+
+    //Adds all covered chunks in the z direction.
+    while (cornerClone.getBlockZ() > twoZ) {
+
+      //Adds all covered chunks in the x direction.
+      while (cornerClone.getBlockX() > twoX) {
+        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+        cornerClone.subtract(16, 0, 0);
+      }
+
+      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+      cornerClone.subtract(0, 0, 16);
+    }
+
+  }
+
+  else if (twoX > oneX && twoZ < oneZ) {
+
+    //Adds all covered chunks in the z direction.
+    while (cornerClone.getBlockZ() > twoZ) {
+
+      //Adds all covered chunks in the x direction.
+      while (cornerClone.getBlockX() < twoX) {
+        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+        cornerClone.add(16, 0, 0);
+      }
+
+      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
+      cornerClone.subtract(0, 0, 16);
+    }
+
+  }
+
+
+  return coveredChunkKeys;
+}
 }

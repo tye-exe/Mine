@@ -1,12 +1,14 @@
 package me.tye.mine.clans;
 
 import me.tye.mine.Database;
+import me.tye.mine.utils.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
 import java.util.UUID;
 
 import static me.tye.mine.Mine.loadedClaims;
@@ -27,6 +29,7 @@ private double Y2;
 private double Z1;
 private double Z2;
 
+private @NotNull HashSet<Long> chunkKeys;
 
 /**
  Gets the claim from the claim ID.
@@ -79,7 +82,10 @@ public Claim(@NotNull UUID clanID, @NotNull String worldName, double X1, double 
   this.Y2 = Y2;
   this.Z1 = Z1;
   this.Z2 = Z2;
+
+  this.chunkKeys = Util.getCoveredChunks(getCornerOne(), getCornerTwo());
 }
+
 
 /**
  Creates a new claim object for an existing claim.<br>
@@ -93,8 +99,9 @@ public Claim(@NotNull UUID clanID, @NotNull String worldName, double X1, double 
  * @param Y2 The y position of the second corner of the claim.
  * @param Z1 The z position of the first corner of the claim.
  * @param Z2 The z position of the second corner of the claim.
+ * @param chunkKeys The keys to the chunks that this claim is present in.
  */
-public Claim(@NotNull UUID clanID, @NotNull UUID claimID, @NotNull String worldName, double X1, double X2, double Y1, double Y2, double Z1, double Z2) {
+public Claim(@NotNull UUID clanID, @NotNull UUID claimID, @NotNull String worldName, double X1, double X2, double Y1, double Y2, double Z1, double Z2, HashSet<Long> chunkKeys) {
   this.clanID = clanID;
   this.claimID = claimID;
   this.worldName = worldName;
@@ -104,6 +111,7 @@ public Claim(@NotNull UUID clanID, @NotNull UUID claimID, @NotNull String worldN
   this.Y2 = Y2;
   this.Z1 = Z1;
   this.Z2 = Z2;
+  this.chunkKeys = chunkKeys;
 }
 
 /**
@@ -171,5 +179,23 @@ public UUID getClaimPerm() {
 
 public int getClaimImportance() {
   return claimImportance;
+}
+
+public @NotNull HashSet<Long> getChunkKeys() {
+  return chunkKeys;
+}
+
+/**
+ * @return The minecraft location of the first corner.
+ */
+public @NotNull Location getCornerOne() {
+  return new Location(Bukkit.getWorld(getWorldName()), getX1(), getY1(), getZ1());
+}
+
+/**
+ * @return The minecraft location of the second corner.
+ */
+public @NotNull Location getCornerTwo() {
+  return new Location(Bukkit.getWorld(getWorldName()), getX2(), getY2(), getZ2());
 }
 }

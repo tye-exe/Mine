@@ -41,10 +41,6 @@ public static final HashMap<UUID, Perm> loadedPerms = new HashMap<>();
  */
 public static final HashMap<UUID, Member> onlineMembers = new HashMap<>();
 
-/**
- Stores the claimed chunks, with the key being the ChunkKey, & the value being the claim ids
- */
-public static final HashMap<Long, UUID[]> claimedChunks = new HashMap<>();
 
 @Override
 public void onEnable() {
