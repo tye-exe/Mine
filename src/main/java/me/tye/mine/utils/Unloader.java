@@ -58,7 +58,7 @@ public void run() {
     //can't be enhanced for due to concurrent modification exception.
     List<Member> members = new ArrayList<>(onlineMembers.values());
     for (int i = 0; i < members.size(); i++) {
-      if (members.get(i).getPlayer().isOnline()) continue;
+      if (members.get(i).getOfflinePlayer().isOnline()) continue;
 
       onlineMembers.remove(members.get(i).getMemberID());
     }

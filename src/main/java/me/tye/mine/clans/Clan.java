@@ -70,8 +70,8 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
     clanID = UUID.randomUUID();
   }
 
-  String clanName = "The clan of "+creator.getPlayer().getName()+".";
-  String clanDescription = "The clan description of "+creator.getPlayer().getName()+".";
+  String clanName = "The clan of "+creator.getOfflinePlayer().getName()+".";
+  String clanDescription = "The clan description of "+creator.getOfflinePlayer().getName()+".";
 
   Clan createdClan = new Clan(clanID, creator.getMemberID(), clanName, clanDescription);
 

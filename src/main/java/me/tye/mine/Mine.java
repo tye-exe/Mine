@@ -21,10 +21,30 @@ import static me.tye.mine.utils.Util.*;
 
 public final class Mine extends JavaPlugin {
 
+/**
+ The clans that are online.
+ */
 public static final HashMap<UUID, Clan> loadedClans = new HashMap<>();
+
+/**
+ The claims that are loaded.
+ */
 public static final HashMap<UUID, Claim> loadedClaims = new HashMap<>();
+
+/**
+ Perms that are loaded.
+ */
 public static final HashMap<UUID, Perm> loadedPerms = new HashMap<>();
+
+/**
+ Members that are online.
+ */
 public static final HashMap<UUID, Member> onlineMembers = new HashMap<>();
+
+/**
+ Stores the claimed chunks, with the key being the ChunkKey, & the value being the claim ids
+ */
+public static final HashMap<Long, UUID[]> claimedChunks = new HashMap<>();
 
 @Override
 public void onEnable() {
@@ -46,6 +66,7 @@ public void onEnable() {
         throw new RuntimeException(e);
     }
 
+    //TODO: improve.
     Unloader.init();
 
     //Commands
@@ -93,7 +114,7 @@ private void createRequiredConfigs() {
         throw new RuntimeException("\"" + langFolder.getAbsolutePath() + "\" Couldn't be created. Please manually create this folder.", e);
     }
 
-  try {
+    try {
         makeRequiredFile(new File(langFolder+File.separator+"eng.yml"), plugin.getResource("lang/eng.yml"), true);
     } catch (IOException e) {
         throw new RuntimeException("\"" + new File(langFolder+File.separator+"eng.yml").getAbsolutePath() + "\" Couldn't be created. Please manually create this folder.", e);

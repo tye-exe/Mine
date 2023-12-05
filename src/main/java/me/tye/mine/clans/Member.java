@@ -2,7 +2,10 @@ package me.tye.mine.clans;
 
 import me.tye.mine.Database;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,15 +79,33 @@ public Member(@NotNull UUID memberID, @Nullable UUID clanID, @Nullable UUID clan
  * @return True if this member is already in a clan.
  */
 public boolean isInClan() {
-  return clanID != null;
+  return getClanID() != null;
 }
 
 /**
  * @return The offline player with this UUID
  */
-public @NotNull OfflinePlayer getPlayer() {
-  return Bukkit.getOfflinePlayer(memberID);
+public @NotNull OfflinePlayer getOfflinePlayer() {
+  return Bukkit.getOfflinePlayer(getMemberID());
 }
+
+/**
+ * @return The online player, or null if the player is offline.
+ */
+public @Nullable Player getPlayer() {
+  return Bukkit.getPlayer(getMemberID());
+}
+
+
+public void renderNearbyClaims(int radius) {
+  Player player = getPlayer();
+  if (player == null) return;
+
+  Location location = player.getLocation();
+  Chunk chunk = location.getChunk();
+  chunk.getChunkKey();
+}
+
 
 public @NotNull UUID getMemberID() {
   return memberID;
