@@ -2,16 +2,19 @@ package me.tye.mine.clans;
 
 import me.tye.mine.Database;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.UUID;
 
+import static me.tye.mine.Mine.loadedClaims;
 import static me.tye.mine.Mine.onlineMembers;
+import static me.tye.mine.utils.Util.getCoveredChunks;
 
 public class Member {
 
@@ -97,13 +100,40 @@ public @Nullable Player getPlayer() {
 }
 
 
-public void renderNearbyClaims(int radius) {
+public void renderNearbyClaims(int chunkRadius) {
   Player player = getPlayer();
   if (player == null) return;
 
-  Location location = player.getLocation();
-  Chunk chunk = location.getChunk();
-  chunk.getChunkKey();
+  //Converts the chunk radius to blocks.
+  int blockRadius = chunkRadius*16;
+
+  Location playerLocation = player.getLocation();
+
+  Location cornerOne = player.getLocation();
+  Location cornerTwo = player.getLocation();
+
+  //Creates two location on opposite sides of each other to render the claims in.
+  cornerOne.subtract(blockRadius + playerLocation.getBlockX(), 0, blockRadius + playerLocation.getBlockZ());
+  cornerTwo.add(blockRadius + playerLocation.getBlockX(), 0, blockRadius + playerLocation.getBlockZ());
+
+  //Gets the keys of all the chunks surrounding the player at the given radius.
+  HashSet<Long> coveredChunks = getCoveredChunks(cornerOne, cornerTwo);
+
+
+  ArrayList<UUID> claimsToRender = new ArrayList<>();
+
+  for (Long chunkKey : coveredChunks) {
+
+    for (Claim claim : loadedClaims.values()) {
+      if (!claim.getChunkKeys().contains(chunkKey)) continue;
+
+      claimsToRender.add(claim.getClaimID());
+    }
+
+  }
+
+
+
 }
 
 
