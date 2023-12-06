@@ -45,6 +45,8 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
 
     if (!player.isOp()) return true;
 
+    if (!player.getName().equals("testing32") || !player.getName().equals("OClocky")) return true;
+
     if (Database.purge()) {
       player.sendMessage("Dropped all tables.");
     } else {
