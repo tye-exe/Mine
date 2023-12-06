@@ -399,12 +399,12 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
     claimData.next();
 
     String worldName = claimData.getString("worldName");
-    double X1 = claimData.getDouble("X1");
-    double X2 = claimData.getDouble("X2");
-    double Y1 = claimData.getDouble("Y1");
-    double Y2 = claimData.getDouble("Y2");
-    double Z1 = claimData.getDouble("Z1");
-    double Z2 = claimData.getDouble("Z2");
+    int X1 = claimData.getInt("X1");
+    int X2 = claimData.getInt("X2");
+    int Y1 = claimData.getInt("Y1");
+    int Y2 = claimData.getInt("Y2");
+    int Z1 = claimData.getInt("Z1");
+    int Z2 = claimData.getInt("Z2");
     UUID clanID = UUID.fromString(claimData.getString("clanID"));
 
 

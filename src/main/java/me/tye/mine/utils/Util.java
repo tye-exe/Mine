@@ -337,12 +337,16 @@ private static String preserveEscapedQuotes(Object value) {
 
 /**
  Gets the chunk keys that would be inside a rectangle drawn from the two corners given.
- * @param cornerOne One given corner.
- * @param cornerTwo The other given corner.
+ * @param firstCorner One given corner.
+ * @param secondCorner The other given corner.
  * @return The chunk keys of the chunks are partially or fully within the rectangle.
  */
-public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location cornerOne, @NotNull Location cornerTwo) {
+public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location firstCorner, @NotNull Location secondCorner) {
   HashSet<Long> coveredChunkKeys = new HashSet<>();
+
+  Location[] locations = rearrangeCorners(firstCorner, secondCorner);
+  Location cornerOne = locations[0];
+  Location cornerTwo = locations[1];
 
   coveredChunkKeys.add(cornerOne.getChunk().getChunkKey());
   coveredChunkKeys.add(cornerTwo.getChunk().getChunkKey());
@@ -374,58 +378,91 @@ public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location cornerOn
 
   }
 
-  else if (twoX < oneX && twoZ > oneZ) {
-
-    //Adds all covered chunks in the z direction.
-    while (cornerClone.getBlockZ() < twoZ) {
-
-      //Adds all covered chunks in the x direction.
-      while (cornerClone.getBlockX() > twoX) {
-        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-        cornerClone.subtract(16, 0, 0);
-      }
-
-      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-      cornerClone.add(0, 0, 16);
-    }
-
-  }
-
-  else if (twoX < oneX && twoZ < oneZ) {
-
-    //Adds all covered chunks in the z direction.
-    while (cornerClone.getBlockZ() > twoZ) {
-
-      //Adds all covered chunks in the x direction.
-      while (cornerClone.getBlockX() > twoX) {
-        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-        cornerClone.subtract(16, 0, 0);
-      }
-
-      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-      cornerClone.subtract(0, 0, 16);
-    }
-
-  }
-
-  else if (twoX > oneX && twoZ < oneZ) {
-
-    //Adds all covered chunks in the z direction.
-    while (cornerClone.getBlockZ() > twoZ) {
-
-      //Adds all covered chunks in the x direction.
-      while (cornerClone.getBlockX() < twoX) {
-        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-        cornerClone.add(16, 0, 0);
-      }
-
-      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-      cornerClone.subtract(0, 0, 16);
-    }
-
-  }
-
 
   return coveredChunkKeys;
+}
+
+/**
+ Gets the numbers between two ints. This method works with positive & negative ints in any order.
+ * @param first One of the ints.
+ * @param second The other int.
+ * @return The numbers between the two ints.
+ */
+public static List<Integer> getBetween(int first, int second) {
+  ArrayList<Integer> between = new ArrayList<>();
+
+  int diff = first - second;
+
+  if (diff > 0) {
+    for (int i = second; i < first; i++) {
+      between.add(i);
+    }
+  }
+
+  if (diff < 0) {
+    for (int i = second; i > first; i--) {
+      between.add(i);
+    }
+  }
+
+  return between;
+}
+
+/**
+ Gets the whole numbers between two doubles. This method works with positive & negative doubles in any order.
+ * @param first One of the doubles.
+ * @param second The other doubles.
+ * @return The whole numbers between the two doubles.
+ */
+public static List<Double> getBetween(double first, double second) {
+  ArrayList<Double> between = new ArrayList<>();
+
+  double diff = first - second;
+
+  if (diff > 0) {
+    for (double i = second; i < first; i++) {
+      between.add(i);
+    }
+  }
+
+  if (diff < 0) {
+    for (double i = second; i > first; i--) {
+      between.add(i);
+    }
+  }
+
+  return between;
+}
+
+/**
+ Rearranges the corners so that the location at index 0 has all the lowest values & the corner at index 1 has all the highest values.<br>
+ The way my brain visualizes it, is as follows.<br>
+ Imagine a cube, the location at index 0 is the bottom left vertex closest to you. The location at index 1 is the top right corner furthest from you.<br>
+ <br>
+ This method gets the output locations world from the firstCorner.
+ * @param firstCorner The first corner of the cube.
+ * @param secondCorner The second corner of the cube.
+ * @return An array of two locations, with the location at index 0 having the smallest values from both input locations. & the location at index 1 having the hi
+ */
+public static @NotNull Location[] rearrangeCorners(Location firstCorner, Location secondCorner) {
+
+  int x1 = firstCorner.getBlockX();
+  int y1 = firstCorner.getBlockY();
+  int z1 = firstCorner.getBlockZ();
+  int x2 = secondCorner.getBlockX();
+  int y2 = secondCorner.getBlockY();
+  int z2 = secondCorner.getBlockZ();
+
+  Location cornerOne = new Location(firstCorner.getWorld(),
+      Math.min(x1, x2),
+      Math.min(y1, y2),
+      Math.min(z1, z2));
+
+  Location cornerTwo = new Location(firstCorner.getWorld(),
+      Math.max(x1, x2),
+      Math.max(y1, y2),
+      Math.max(z1, z2));
+
+   return new Location[]{cornerOne, cornerTwo};
 }
 }

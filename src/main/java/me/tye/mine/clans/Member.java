@@ -3,7 +3,9 @@ package me.tye.mine.clans;
 import me.tye.mine.Database;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 import static me.tye.mine.Mine.loadedClaims;
 import static me.tye.mine.Mine.onlineMembers;
+import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
 import static me.tye.mine.utils.Util.getCoveredChunks;
 
 public class Member {
@@ -100,12 +103,9 @@ public @Nullable Player getPlayer() {
 }
 
 
-public void renderNearbyClaims(int chunkRadius) {
+public void renderNearbyClaims(int blockRadius) {
   Player player = getPlayer();
   if (player == null) return;
-
-  //Converts the chunk radius to blocks.
-  int blockRadius = chunkRadius*16;
 
   Location playerLocation = player.getLocation();
 
@@ -120,20 +120,38 @@ public void renderNearbyClaims(int chunkRadius) {
   HashSet<Long> coveredChunks = getCoveredChunks(cornerOne, cornerTwo);
 
 
-  ArrayList<UUID> claimsToRender = new ArrayList<>();
+  ArrayList<Claim> claimsToRender = new ArrayList<>();
 
   for (Long chunkKey : coveredChunks) {
 
     for (Claim claim : loadedClaims.values()) {
       if (!claim.getChunkKeys().contains(chunkKey)) continue;
 
-      claimsToRender.add(claim.getClaimID());
+      claimsToRender.add(claim);
     }
 
   }
 
+  ArrayList<BlockState> renderedOutline = new ArrayList<>();
 
+  //gets the parts of the claims to render
+  for (Claim claim : claimsToRender) {
 
+    Material clanOutline = outlineMaterial;
+    Clan clan = claim.getClan();
+
+    //Sets the outline material to the clans one if the clan can be retrieved.
+    if (clan != null) clanOutline = clan.getOutlineMaterial();
+
+    for (Location location : claim.getOutlineWithin(cornerOne, cornerTwo)) {
+      BlockState state = location.getBlock().getState();
+      state.setType(clanOutline);
+      renderedOutline.add(state);
+    }
+
+  }
+
+  player.sendBlockChanges(renderedOutline);
 }
 
 

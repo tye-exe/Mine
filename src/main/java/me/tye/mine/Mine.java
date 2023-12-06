@@ -74,6 +74,7 @@ public void onEnable() {
     getServer().getPluginManager().registerEvents(new PlayerDrop(), this);
     getServer().getPluginManager().registerEvents(new PlayerQuit(), this);
     getServer().getPluginManager().registerEvents(new PlayerJoin(), this);
+    getServer().getPluginManager().registerEvents(new PlayerSwitch(), this);
 
 }
 
