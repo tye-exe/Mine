@@ -2,10 +2,12 @@ package me.tye.mine.utils;
 
 import me.tye.mine.Mine;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -465,4 +467,25 @@ public static @NotNull Location[] rearrangeCorners(Location firstCorner, Locatio
 
    return new Location[]{cornerOne, cornerTwo};
 }
+
+/**
+ This method sends a message to all online op players & to the console that Mine has encountered an error that it can't recover from, Then disables Mine! as a plugin.
+ * @param fatalThrowable The error that Mine! can't recover from.
+ * @return The RuntimeException to throw.
+ */
+public static RuntimeException handleFatalException(Throwable fatalThrowable) {
+  //TODO: lock the plugin in a stasis instead of shutting down.
+
+  for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+    if (!onlinePlayer.isOp()) continue;
+
+    onlinePlayer.sendMessage(Lang.excepts_fatalError.getResponse());
+  }
+
+  log.severe(Lang.excepts_fatalError.getResponse());
+  Bukkit.getPluginManager().disablePlugin(plugin);
+
+  return new RuntimeException(fatalThrowable);
+}
+
 }

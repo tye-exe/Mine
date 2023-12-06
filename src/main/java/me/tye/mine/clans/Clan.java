@@ -75,7 +75,7 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
 
   Clan createdClan = new Clan(clanID, creator);
 
-  Database.writeClan(createdClan);
+  Database.createClan(createdClan);
   //invalidate the member cache since the member is now in a clan.
   onlineMembers.remove(creator.getMemberID());
 

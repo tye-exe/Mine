@@ -16,6 +16,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 
+import static me.tye.mine.utils.Util.handleFatalException;
+
 public class Database {
 private static boolean initiated = false;
 
@@ -126,30 +128,51 @@ public static void init() throws SQLException {
  Gets the connection to the database.<br>
  <b>Don't use this method with auto closable. The connection to the database should stay open.</b>
  * @return The connection to the database.
- * @throws SQLException If a connection to the database couldn't be established.
+ * @throws RuntimeException If a connection to the database couldn't be established.
  */
-private static @NotNull Connection getDbConnection() throws SQLException {
-  //Attempts to reconnect to the database if it has lost connection
-  if (dbConnection.isClosed()) {
-    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
+private static @NotNull Connection getDbConnection() throws RuntimeException {
+  try {
+    //Attempts to reconnect to the database if it has lost connection
+    if (dbConnection.isClosed()) {
+      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+      String databaseUrl = "jdbc:sqlite:"+databasePath;
 
-    String databaseUrl = "jdbc:sqlite:" + databasePath;
+      dbConnection = DriverManager.getConnection(databaseUrl);
+    }
 
-    dbConnection = DriverManager.getConnection(databaseUrl);
+    return dbConnection;
+
+  } catch (SQLException e) {
+
+    //If there was an error determining if the database lost connection then try to establish a new connection.
+    try {
+      dbConnection = null;
+
+      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+      String databaseUrl = "jdbc:sqlite:"+databasePath;
+
+      dbConnection = DriverManager.getConnection(databaseUrl);
+      return dbConnection;
+
+    } catch (SQLException ex) {
+      throw handleFatalException(ex);
+    }
+
   }
-
-  return dbConnection;
 }
 
-private static void killConnection() {
+/**
+ Kills the connection to the database.
+ * @throws RuntimeException If there was an error killing the connection to the database.
+ */
+private static void killConnection() throws RuntimeException {
   try {
     dbConnection.setAutoCommit(false);
     dbConnection.commit();
     dbConnection.close();
-  } catch (SQLException e) {
-    e.printStackTrace();
 
-    //TODO: REMOVE
+  } catch (SQLException e) {
+    throw handleFatalException(e);
   }
 }
 
@@ -193,12 +216,18 @@ public static boolean purge() {
  Gets the result of the given query from the database.
  * @param query The given query.
  * @return The result set from the database.
- * @throws SQLException If there was an error querying the database.
+ * @throws RuntimeException If there was an error querying the database.
  */
-private static @NotNull ResultSet getResult(@NotNull String query) throws SQLException {
-  Connection dbConnection = getDbConnection();
-  Statement statement = dbConnection.createStatement();
-  return statement.executeQuery(query);
+private static @NotNull ResultSet getResult(@NotNull String query) throws RuntimeException {
+  try {
+    Connection dbConnection = getDbConnection();
+    Statement statement = dbConnection.createStatement();
+    return statement.executeQuery(query);
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
 }
 
 
@@ -206,12 +235,17 @@ private static @NotNull ResultSet getResult(@NotNull String query) throws SQLExc
  Checks if the database has a response for a query.
  * @param query The given query.
  * @return True if the database responded with a populated result set. False otherwise.
- * @throws SQLException If there was an error querying the database.
+ * @throws RuntimeException If there was an error querying the database.
  */
-private static boolean hasResult(@NotNull String query) throws SQLException {
-  ResultSet result = getResult(query);
+private static boolean hasResult(@NotNull String query) throws RuntimeException {
+  try {
+    ResultSet result = getResult(query);
+    return result.next();
 
-  return result.next();
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
 }
 
 /**
@@ -241,7 +275,7 @@ private static @NotNull String createWhere(@NotNull String column, @NotNull Coll
 /**
  Checks if a clan with the given UUID already exists.
  * @param clanID The UUID to check.
- * @return True if the clan exists or if there was an error interacting with the database.
+ * @return True if the clan exists.
  */
 public static boolean clanExists(@NotNull UUID clanID) {
   return exists("clanID", "clans", clanID);
@@ -250,7 +284,7 @@ public static boolean clanExists(@NotNull UUID clanID) {
 /**
  Checks if a claim with the given UUID already exists.
  * @param claimID The UUID to check.
- * @return True if the claim exists or if there was an error interacting with the database.
+ * @return True if the claim exists.
  */
 public static boolean claimExists(@NotNull UUID claimID) {
   return exists("claimID", "claims", claimID);
@@ -259,7 +293,7 @@ public static boolean claimExists(@NotNull UUID claimID) {
 /**
  Checks if a member with the given UUID already exists.
  * @param memberID The UUID to check.
- * @return True if the member exists or if there was an error interacting with the database.
+ * @return True if the member exists.
  */
 public static boolean memberExists(@NotNull UUID memberID) {
   return exists("memberID", "members", memberID);
@@ -268,7 +302,7 @@ public static boolean memberExists(@NotNull UUID memberID) {
 /**
  Checks if a perm with the given UUID already exists.
  * @param permID The UUID to check.
- * @return True if the perm exists or if there was an error interacting with the database.
+ * @return True if the perm exists.
  */
 public static boolean permExists(@NotNull UUID permID) {
   return exists("permID", "perms", permID);
@@ -280,28 +314,20 @@ public static boolean permExists(@NotNull UUID permID) {
  * @param column The given column.
  * @param table The given table.
  * @param uuid The given uuid.
- * @return True if the uuid is taken or if there was an error interacting with the database.
+ * @return True if the uuid is taken.
  */
 private static boolean exists(@NotNull String column, @NotNull String table, @NotNull UUID uuid) {
-  try {
-
-    return hasResult("SELECT "+column+" FROM "+table+" WHERE \""+column+"\" == \""+uuid+"\";");
-
-  } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
-    killConnection();
-    return true;
-  }
+  return hasResult("SELECT "+column+" FROM "+table+" WHERE \""+column+"\" == \""+uuid+"\";");
 }
 
 
 /**
  Gets a member from the database.
  * @param memberID The uuid of the member.
- * @return The member, if present. If the member doesn't exist or there was an error, null will be returned.
+ * @return The member with this uuid. If the member doesn't exist null will be returned.
+ * @throws RuntimeException If there was an error querying the database.
  */
-public static @Nullable Member getMember(@NotNull UUID memberID) {
+public static @Nullable Member getMember(@NotNull UUID memberID) throws RuntimeException {
   if (!memberExists(memberID)) return null;
 
   try (ResultSet memberData = getResult(
@@ -328,19 +354,18 @@ public static @Nullable Member getMember(@NotNull UUID memberID) {
     return new Member(memberID, clanID, clanPermID);
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
 }
 
 /**
  Gets a clan from the database.
  * @param clanID The uuid of the clan.
- * @return The clan, if present. If the clan doesn't exist or there was an error, null will be returned.
+ * @return The clan with the given uuid. If the clan doesn't exist null will be returned.
+ * @throws RuntimeException If there was an error querying the database.
  */
-public static @Nullable Clan getClan(@NotNull UUID clanID) {
+public static @Nullable Clan getClan(@NotNull UUID clanID) throws RuntimeException {
   if (!clanExists(clanID)) return null;
 
   try (ResultSet clanData = getResult(
@@ -377,19 +402,18 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
     return new Clan(clanID, claimIDs ,memberIDs, permIDs, clanName, clanDescription, renderingOutline);
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
 }
 
 /**
  Gets a claim from the database.
  * @param claimID The uuid of the claim
- * @return The claim, if present. If the claim doesn't exist or there was an error, null will be returned.
+ * @return The claim with this uuid. If the claim doesn't exist null will be returned.
+ * @throws RuntimeException If there was an error querying the database.
  */
-public static @Nullable Claim getClaim(@NotNull UUID claimID) {
+public static @Nullable Claim getClaim(@NotNull UUID claimID) throws RuntimeException {
   if (!claimExists(claimID)) return null;
 
   try (ResultSet claimData = getResult(
@@ -423,19 +447,18 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
     }
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
 }
 
 /**
  Gets a perm from the database.
  * @param permId The uuid of the perm to get
- * @return The perm, if present. If the perm doesn't exist or there was an error, null will be returned.
+ * @return The perm with this uuid. If the perm doesn't exist null will be returned.
+ * @throws RuntimeException If there was an error querying the database.
  */
-public static @Nullable Perm getPerm(@NotNull UUID permId) {
+public static @Nullable Perm getPerm(@NotNull UUID permId) throws RuntimeException {
   if (permExists(permId)) return null;
 
   try (ResultSet permData = getResult(
@@ -450,19 +473,20 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) {
     return new Perm(permId, permName, permDescription);
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
 }
 
 /**
  Writes a member to the database.<br>
- <b>This method will overwrite the current entry for a member with this uuid, if it exists.</b> Use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
+  Use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
  * @param memberID The uuid of the member to create.
+ * @throws RuntimeException If there was an error accessing the database.
  */
-public static void createMember(@NotNull UUID memberID) {
+public static void createMember(@NotNull UUID memberID) throws RuntimeException {
+  if (memberExists(memberID)) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(true);
@@ -478,18 +502,20 @@ public static void createMember(@NotNull UUID memberID) {
     statement.execute();
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
 }
 
 /**
  Writes a clan to the database.<br>
- <b>This method will throw an error if the clan already exists.</b> Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
- * @param newClan The new clan to create.
+ Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
+ * @param newClan The new clan to write to the database.
+ * @throws RuntimeException If there was an error accessing the database.
  */
-public static void writeClan(@NotNull Clan newClan) {
+public static void createClan(@NotNull Clan newClan) throws RuntimeException {
+  if (clanExists(newClan.getClanID())) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(false);
@@ -534,13 +560,20 @@ public static void writeClan(@NotNull Clan newClan) {
     dbConnection.setAutoCommit(true);
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
 }
 
-public static void createClaim(@NotNull Claim newClaim) {
+/**
+ Writes a new claim to the database<br>
+ Use {@link #claimExists(UUID)} to check if the clan exists before creating a new one.
+ * @param newClaim The new claim to write to the database.
+ * @throws RuntimeException If there was an error accessing the database.
+ */
+public static void createClaim(@NotNull Claim newClaim) throws RuntimeException {
+  if (claimExists(newClaim.getClaimID())) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(false);
@@ -575,18 +608,21 @@ public static void createClaim(@NotNull Claim newClaim) {
     dbConnection.commit();
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO:remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
 }
 
 
 /**
- Updates the database entry for an existing clan.
+ Updates the database entry for an existing clan.<br>
+ Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
  * @param updatedClan The clan to update.
+ * @throws RuntimeException If there was an error accessing the database.
  */
-public static void updateClan(@NotNull Clan updatedClan) {
+public static void updateClan(@NotNull Clan updatedClan) throws RuntimeException {
+  if (!clanExists(updatedClan.getClanID())) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(false);
@@ -667,9 +703,8 @@ public static void updateClan(@NotNull Clan updatedClan) {
     dbConnection.setAutoCommit(true);
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
 }
 }
