@@ -1,5 +1,11 @@
 # Mine!
-A paper based plugin for claiming land in modern versions of Minecraft!
+A paper based plugin for claiming land in modern versions of Minecraft!  
+  
+If you find an exploit when using the most recent version of mine, you can:   
+- Open an bug report via an issue on github.
+- Join the (yet to be created) discord server & report the bug there.    
+
+If you report a bug that is a legitimate bug then you're name with a link of your choice can be added to this readme!  
 
 ## Commands
 Mine! works off of one main command ("/mine" or "/.") with lots of options.
@@ -12,6 +18,8 @@ pointer - This command gives you a [pointer](#pointer) item to select an area wi
 This item can be obtained by using the "/. pointer" [command](#commands).  
 Left-clicking with the pointer will set a corner of your claim. Right-clicking will set the other corner. Clicking again will change the selected block.  
 When a block is selected it will change to a marker block & light up. When two or more blocks are selected an outline of Red Glass will be rendered along the edges of the selected area.
+
+
 
 ## FutureGoals:
 - ~~Claim an area.~~
