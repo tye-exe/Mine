@@ -172,6 +172,7 @@ public static boolean purge() {
     statement.execute("DROP TABLE members");
     statement.execute("DROP TABLE perms");
     statement.execute("DROP TABLE claims");
+    statement.execute("DROP TABLE claimedChunks");
 
     newConnection.commit();
     newConnection.close();
