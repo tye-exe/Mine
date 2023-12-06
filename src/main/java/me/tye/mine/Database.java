@@ -5,6 +5,7 @@ import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.clans.Perm;
 import me.tye.mine.utils.TempConfigsStore;
+import org.bukkit.Material;
 import org.codehaus.plexus.util.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +41,8 @@ public static void init() throws SQLException {
         clanID TEXT NOT NULL PRIMARY KEY,
               
         name TEXT NOT NULL,
-        description TEXT NOT NULL
+        description TEXT NOT NULL,
+        renderingOutline TEXT NOT NULL
               
         ) WITHOUT ROWID;
         """;
@@ -107,10 +109,13 @@ public static void init() throws SQLException {
 
   Statement statement = dbConnection.createStatement();
   dbConnection.setAutoCommit(false);
+
   statement.execute(clanTable);
   statement.execute(claimsTable);
   statement.execute(memberTable);
   statement.execute(PermsTable);
+  statement.execute(claimedChunks);
+
   dbConnection.commit();
   dbConnection.setAutoCommit(true);
 
@@ -345,7 +350,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
 
     String clanName = clanData.getString("name");
     String clanDescription = clanData.getString("description");
-
+    Material renderingOutline = Material.valueOf(clanData.getString("renderingOutline").toUpperCase());
 
     //Gets the UUIDS of all the claims
     Collection<UUID> claimIDs = new ArrayList<>();
@@ -368,7 +373,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
       permIDs.add(UUID.fromString(perms.getString("permID")));
     }
 
-    return new Clan(clanID, clanName, clanDescription, claimIDs ,memberIDs, permIDs);
+    return new Clan(clanID, claimIDs ,memberIDs, permIDs, clanName, clanDescription, renderingOutline);
 
   } catch (SQLException | IllegalArgumentException e) {
     e.printStackTrace();
@@ -490,11 +495,12 @@ public static void writeClan(@NotNull Clan newClan) {
 
     //create the clan
     PreparedStatement clanCreate = dbConnection.prepareStatement(
-        "INSERT INTO clans (clanID, name, description) VALUES(?,?,?)");
+        "INSERT INTO clans (clanID, name, description, renderingOutline) VALUES(?,?,?,?)");
 
     clanCreate.setString(1, newClan.getClanID().toString());
     clanCreate.setString(2, newClan.getName());
     clanCreate.setString(3, newClan.getDescription());
+    clanCreate.setString(4, newClan.getOutlineMaterial().toString());
 
     clanCreate.executeUpdate();
 
@@ -588,13 +594,15 @@ public static void updateClan(@NotNull Clan updatedClan) {
     PreparedStatement clanUpdate = dbConnection.prepareStatement("""
             UPDATE clans SET
             name = ?,
-            description = ?
+            description = ?,
+            renderingOutline = ?
             WHERE clanID == ?;
             """);
 
     clanUpdate.setString(1, updatedClan.getName());
     clanUpdate.setString(2, updatedClan.getDescription());
     clanUpdate.setString(3, updatedClan.getClanID().toString());
+    clanUpdate.setString(3, updatedClan.getOutlineMaterial().toString());
 
     clanUpdate.executeUpdate();
 
