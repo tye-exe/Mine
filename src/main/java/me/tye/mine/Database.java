@@ -4,6 +4,7 @@ import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.clans.Perm;
+import me.tye.mine.utils.MineCacheMap;
 import me.tye.mine.utils.TempConfigsStore;
 import me.tye.mine.utils.Unloader;
 import org.bukkit.Material;
@@ -18,10 +19,10 @@ import static me.tye.mine.utils.Util.handleFatalException;
 
 public class Database {
 
-public static final Map<UUID, Clan> clansCache = Collections.synchronizedMap(new HashMap<>());
-public static final Map<UUID, Claim> claimsCache = Collections.synchronizedMap(new HashMap<>());
-public static final Map<UUID, Perm> permsCache = Collections.synchronizedMap(new HashMap<>());
-public static final Map<UUID, Member> memberCache = Collections.synchronizedMap(new HashMap<>());
+public static final Map<UUID, Clan> clansCache = Collections.synchronizedMap(new MineCacheMap<>()); //try & solve these warnings?
+public static final Map<UUID, Claim> claimsCache = Collections.synchronizedMap(new MineCacheMap<>());
+public static final Map<UUID, Perm> permsCache = Collections.synchronizedMap(new MineCacheMap<>());
+public static final Map<UUID, Member> memberCache = Collections.synchronizedMap(new MineCacheMap<>());
 
 
 private static boolean initiated = false;
@@ -168,17 +169,13 @@ private static @NotNull Connection getDbConnection() throws RuntimeException {
 
 /**
  Kills the connection to the database.
- * @throws RuntimeException If there was an error killing the connection to the database.
  */
-private static void killConnection() throws RuntimeException {
+private static void killConnection() {
   try {
-    dbConnection.setAutoCommit(false);
-    dbConnection.commit();
     dbConnection.close();
 
-  } catch (SQLException e) {
-    throw handleFatalException(e);
-  }
+    //Doesn't throw fatal error since this will be called before fatal database errors.
+  } catch (SQLException ignore) {}
 }
 
 /**
@@ -280,6 +277,17 @@ private static @NotNull String createWhere(@NotNull String column, @NotNull Coll
   }
 
   return where.substring(0, where.length()-4);
+}
+
+/**
+ Adds a member to the cache.
+ * @param memberID The uuid of the member.
+ */
+public static void cacheMember(@NotNull UUID memberID) {
+  Member member = Database.getMember(memberID);
+  if (member == null) return;
+
+  memberCache.put(memberID, member);
 }
 
 /**
@@ -752,5 +760,16 @@ public static void updateClan(@NotNull Clan updatedClan) throws RuntimeException
   }
 
   clansCache.put(updatedClan.getClanID(), updatedClan);
+}
+
+public static Collection<Long> getChunkKeys() throws RuntimeException {
+  try (ResultSet resultSet = getResult(
+      "SELECT DISTINCT (chunkKey) FROM claimedChunks"
+  )) {
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
 }
 }

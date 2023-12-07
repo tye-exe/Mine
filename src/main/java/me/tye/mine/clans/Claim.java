@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
-import static me.tye.mine.Database.claimsCache;
 import static me.tye.mine.utils.Util.getBetween;
 import static me.tye.mine.utils.Util.rearrangeCorners;
 
@@ -41,20 +40,10 @@ private @NotNull HashSet<Long> chunkKeys;
  * @return The claim, or null if the claim doesn't exist.
  */
 public static @Nullable Claim getClaim(@NotNull UUID claimID) {
-  //If the claim is loaded then it gets the claim object from the HashMap.
-  if (claimsCache.containsKey(claimID)) {
-    return claimsCache.get(claimID);
-  }
+  //If the claim doesn't exist return null
+  if (!Database.claimExists(claimID)) return null;
 
-  //If the claim isn't loaded but exists, gets it from the database & loads it.
-  if (Database.claimExists(claimID)) {
-    Claim claim = Database.getClaim(claimID);
-    claimsCache.put(claimID, claim);
-    return claim;
-  }
-
-  //returns null if the claim can't be found.
-  return null;
+  return Database.getClaim(claimID);
 }
 
 
