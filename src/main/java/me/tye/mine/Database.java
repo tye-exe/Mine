@@ -4,6 +4,7 @@ import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.clans.Perm;
+import me.tye.mine.errors.FatalDatabaseException;
 import me.tye.mine.utils.MineCacheMap;
 import me.tye.mine.utils.TempConfigsStore;
 import me.tye.mine.utils.Unloader;
@@ -134,9 +135,9 @@ public static void init() throws SQLException {
  Gets the connection to the database.<br>
  <b>Don't use this method with auto closable. The connection to the database should stay open.</b>
  * @return The connection to the database.
- * @throws RuntimeException If a connection to the database couldn't be established.
+ * @throws FatalDatabaseException If a connection to the database couldn't be established.
  */
-private static @NotNull Connection getDbConnection() throws RuntimeException {
+private static @NotNull Connection getDbConnection() throws FatalDatabaseException {
   try {
     //Attempts to reconnect to the database if it has lost connection
     if (dbConnection.isClosed()) {
@@ -223,9 +224,9 @@ public static boolean purge() {
  Gets the result of the given query from the database.
  * @param query The given query.
  * @return The result set from the database.
- * @throws RuntimeException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-private static @NotNull ResultSet getResult(@NotNull String query) throws RuntimeException {
+private static @NotNull ResultSet getResult(@NotNull String query) throws FatalDatabaseException {
   try {
     Connection dbConnection = getDbConnection();
     Statement statement = dbConnection.createStatement();
@@ -242,9 +243,9 @@ private static @NotNull ResultSet getResult(@NotNull String query) throws Runtim
  Checks if the database has a response for a query.
  * @param query The given query.
  * @return True if the database responded with a populated result set. False otherwise.
- * @throws RuntimeException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-private static boolean hasResult(@NotNull String query) throws RuntimeException {
+private static boolean hasResult(@NotNull String query) throws FatalDatabaseException {
   try {
     ResultSet result = getResult(query);
     return result.next();
@@ -351,9 +352,9 @@ private static boolean exists(@NotNull String column, @NotNull String table, @No
  Gets a member from the database.
  * @param memberID The uuid of the member.
  * @return The member with this uuid. If the member doesn't exist null will be returned.
- * @throws RuntimeException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Member getMember(@NotNull UUID memberID) throws RuntimeException {
+public static @Nullable Member getMember(@NotNull UUID memberID) throws FatalDatabaseException {
   if (!memberExists(memberID)) return null;
 
   Member member;
@@ -394,9 +395,9 @@ public static @Nullable Member getMember(@NotNull UUID memberID) throws RuntimeE
  Gets a clan from the database.
  * @param clanID The uuid of the clan.
  * @return The clan with the given uuid. If the clan doesn't exist null will be returned.
- * @throws RuntimeException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Clan getClan(@NotNull UUID clanID) throws RuntimeException {
+public static @Nullable Clan getClan(@NotNull UUID clanID) throws FatalDatabaseException {
   if (!clanExists(clanID)) return null;
 
   Clan clan;
@@ -447,9 +448,9 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) throws RuntimeExcepti
  Gets a claim from the database & loads it into the cache.
  * @param claimID The uuid of the claim
  * @return The claim with this uuid. If the claim doesn't exist null will be returned.
- * @throws RuntimeException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Claim getClaim(@NotNull UUID claimID) throws RuntimeException {
+public static @Nullable Claim getClaim(@NotNull UUID claimID) throws FatalDatabaseException {
   if (!claimExists(claimID)) return null;
 
   Claim claim;
@@ -497,9 +498,9 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) throws RuntimeExce
  Gets a perm from the database & loads it into the cache.
  * @param permId The uuid of the perm to get
  * @return The perm with this uuid. If the perm doesn't exist null will be returned.
- * @throws RuntimeException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Perm getPerm(@NotNull UUID permId) throws RuntimeException {
+public static @Nullable Perm getPerm(@NotNull UUID permId) throws FatalDatabaseException {
   if (permExists(permId)) return null;
 
   Perm perm;
@@ -528,9 +529,9 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) throws RuntimeExcepti
  Writes a member to the database & puts it into the cache.<br>
  You can use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
  * @param memberID The uuid of the member to create.
- * @throws RuntimeException If there was an error accessing the database.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void createMember(@NotNull UUID memberID) throws RuntimeException {
+public static void createMember(@NotNull UUID memberID) throws FatalDatabaseException {
   if (memberExists(memberID)) return;
 
   try {
@@ -559,9 +560,9 @@ public static void createMember(@NotNull UUID memberID) throws RuntimeException 
  Writes a clan to the database & puts it into the cache.<br>
  You can use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
  * @param newClan The new clan to write to the database.
- * @throws RuntimeException If there was an error accessing the database.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void createClan(@NotNull Clan newClan) throws RuntimeException {
+public static void createClan(@NotNull Clan newClan) throws FatalDatabaseException {
   if (clanExists(newClan.getClanID())) return;
 
   try {
@@ -619,9 +620,9 @@ public static void createClan(@NotNull Clan newClan) throws RuntimeException {
  Writes a new claim to the database & puts it into the cache.<br>
  You can use {@link #claimExists(UUID)} to check if the clan exists before creating a new one.
  * @param newClaim The new claim to write to the database.
- * @throws RuntimeException If there was an error accessing the database.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void createClaim(@NotNull Claim newClaim) throws RuntimeException {
+public static void createClaim(@NotNull Claim newClaim) throws FatalDatabaseException {
   if (claimExists(newClaim.getClaimID())) return;
 
   try {
@@ -670,9 +671,9 @@ public static void createClaim(@NotNull Claim newClaim) throws RuntimeException 
  Updates the database entry & cache for an existing clan.<br>
  You can use {@link #clanExists(UUID)} to check if the clan exists before updating one.
  * @param updatedClan The clan to update.
- * @throws RuntimeException If there was an error accessing the database.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void updateClan(@NotNull Clan updatedClan) throws RuntimeException {
+public static void updateClan(@NotNull Clan updatedClan) throws FatalDatabaseException {
   if (!clanExists(updatedClan.getClanID())) return;
 
   try {
