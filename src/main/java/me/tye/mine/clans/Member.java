@@ -2,13 +2,22 @@ package me.tye.mine.clans;
 
 import me.tye.mine.Database;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.BlockState;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.UUID;
 
-import static me.tye.mine.Mine.onlineMembers;
+import static me.tye.mine.Database.claimsCache;
+import static me.tye.mine.Database.memberCache;
+import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
+import static me.tye.mine.utils.Util.getCoveredChunks;
 
 public class Member {
 
@@ -25,14 +34,14 @@ private @Nullable UUID clanID;
  */
 public static @Nullable Member getMember(@NotNull UUID playerId) {
   //If the player is a member & is online then gets the member object from the HashMap.
-  if (onlineMembers.containsKey(playerId)) {
-    return onlineMembers.get(playerId);
+  if (memberCache.containsKey(playerId)) {
+    return memberCache.get(playerId);
   }
 
   //If the member isn't online but exists, get them from the database & load them.
   if (Database.memberExists(playerId)) {
     Member member = Database.getMember(playerId);
-    onlineMembers.put(playerId, member);
+    memberCache.put(playerId, member);
     return member;
   }
 
@@ -43,9 +52,7 @@ public static @Nullable Member getMember(@NotNull UUID playerId) {
  Creates a new member for the given player uuid. Member objects are tied to players by their uuid.
  */
 public static void createMember(@NotNull UUID playerId) {
-  Member member = new Member(playerId, null, null);
   Database.createMember(playerId);
-  onlineMembers.put(playerId, member);
 }
 
 /**
@@ -56,7 +63,7 @@ public static void registerMember(@NotNull UUID memberID) {
   Member member = Database.getMember(memberID);
   if (member == null) return;
 
-  onlineMembers.put(memberID, member);
+  memberCache.put(memberID, member);
 }
 
 
@@ -76,15 +83,75 @@ public Member(@NotNull UUID memberID, @Nullable UUID clanID, @Nullable UUID clan
  * @return True if this member is already in a clan.
  */
 public boolean isInClan() {
-  return clanID != null;
+  return getClanID() != null;
 }
 
 /**
  * @return The offline player with this UUID
  */
-public @NotNull OfflinePlayer getPlayer() {
-  return Bukkit.getOfflinePlayer(memberID);
+public @NotNull OfflinePlayer getOfflinePlayer() {
+  return Bukkit.getOfflinePlayer(getMemberID());
 }
+
+/**
+ * @return The online player, or null if the player is offline.
+ */
+public @Nullable Player getPlayer() {
+  return Bukkit.getPlayer(getMemberID());
+}
+
+
+public void renderNearbyClaims(int blockRadius) {
+  Player player = getPlayer();
+  if (player == null) return;
+
+  Location playerLocation = player.getLocation();
+
+  Location cornerOne = player.getLocation();
+  Location cornerTwo = player.getLocation();
+
+  //Creates two location on opposite sides of each other to render the claims in.
+  cornerOne.subtract(blockRadius + playerLocation.getBlockX(), 0, blockRadius + playerLocation.getBlockZ());
+  cornerTwo.add(blockRadius + playerLocation.getBlockX(), 0, blockRadius + playerLocation.getBlockZ());
+
+  //Gets the keys of all the chunks surrounding the player at the given radius.
+  HashSet<Long> coveredChunks = getCoveredChunks(cornerOne, cornerTwo);
+
+
+  ArrayList<Claim> claimsToRender = new ArrayList<>();
+
+  for (Long chunkKey : coveredChunks) {
+
+    for (Claim claim : claimsCache.values()) {
+      if (!claim.getChunkKeys().contains(chunkKey)) continue;
+
+      claimsToRender.add(claim);
+    }
+
+  }
+
+  ArrayList<BlockState> renderedOutline = new ArrayList<>();
+
+  //gets the parts of the claims to render
+  for (Claim claim : claimsToRender) {
+
+    Material clanOutline = outlineMaterial;
+    Clan clan = claim.getClan();
+
+    //Sets the outline material to the clans one if the clan can be retrieved.
+    if (clan != null) clanOutline = clan.getOutlineMaterial();
+
+    for (Location location : claim.getOutlineWithin(cornerOne, cornerTwo)) {
+      BlockState state = location.getBlock().getState();
+      state.setType(clanOutline);
+      renderedOutline.add(state);
+    }
+
+  }
+
+  player.sendBlockChanges(renderedOutline);
+}
+
 
 public @NotNull UUID getMemberID() {
   return memberID;

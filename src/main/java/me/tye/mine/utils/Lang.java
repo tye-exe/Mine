@@ -18,6 +18,7 @@ public enum Lang {
   database_noMember,
   database_noClan,
 
+  excepts_fatalError,
   excepts_invalidLangKey,
   excepts_invalidConfigKey,
   excepts_missingLangKey,

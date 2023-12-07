@@ -2,6 +2,7 @@ package me.tye.mine;
 
 import me.tye.mine.utils.SendBlockChanges;
 import me.tye.mine.utils.TempConfigsStore;
+import me.tye.mine.utils.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -252,7 +253,7 @@ private void renderSelection(Location cornerToReRestore, Location newSelectedCor
 
 
   //adds the outline for the X blocks
-  getBetween(startX, endX).forEach((X) -> {
+  Util.getBetween(startX, endX).forEach((X) -> {
     selectionOutline.add(new Location(world, X, startY, startZ));
     selectionOutline.add(new Location(world, X, endY, endZ));
     selectionOutline.add(new Location(world, X, startY, endZ));
@@ -260,7 +261,7 @@ private void renderSelection(Location cornerToReRestore, Location newSelectedCor
   });
 
   //adds the outline for the Y blocks
-  getBetween(startY, endY).forEach((Y) -> {
+  Util.getBetween(startY, endY).forEach((Y) -> {
     selectionOutline.add(new Location(world, startX, Y, startZ));
     selectionOutline.add(new Location(world, endX, Y, endZ));
     selectionOutline.add(new Location(world, startX, Y, endZ));
@@ -268,7 +269,7 @@ private void renderSelection(Location cornerToReRestore, Location newSelectedCor
   });
 
   //adds the outline for the Z blocks
-  getBetween(startZ, endZ).forEach((Z) -> {
+  Util.getBetween(startZ, endZ).forEach((Z) -> {
     selectionOutline.add(new Location(world, startX, startY, Z));
     selectionOutline.add(new Location(world, endX, endY, Z));
     selectionOutline.add(new Location(world, startX, endY, Z));
@@ -301,32 +302,6 @@ private void renderSelection(Location cornerToReRestore, Location newSelectedCor
   //Sends the new update blocks a tick later, since when the player clicks on a block, a sends a block update packet.
   Bukkit.getScheduler().runTaskLater(plugin, new SendBlockChanges().init(updateBlocks, player), 1);
 
-}
-
-/**
- Gets the numbers between two ints. This method works with positive & negative ints in any order.
- * @param first One of the ints.
- * @param second The other int.
- * @return The numbers between the two ints.
- */
-private List<Integer> getBetween(int first, int second) {
-  ArrayList<Integer> between = new ArrayList<>();
-
-  int diff = first - second;
-
-  if (diff > 0) {
-    for (int i = second; i < first; i++) {
-      between.add(i);
-    }
-  }
-
-  if (diff < 0) {
-    for (int i = second; i > first; i--) {
-      between.add(i);
-    }
-  }
-
-  return between;
 }
 
 /**
