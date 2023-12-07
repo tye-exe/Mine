@@ -1,5 +1,5 @@
 pointer:
-  getItem: "Left click to select one corner, right click to select the other.\nDrop the pointer item to confirm the selection.\nRerun this command to stop the selection."
+  getItem: "Left click to select one corner, right click to select the other.{newLine}Drop the pointer item to confirm the selection.{newLine}Rerun this command to stop the selection."
   confirmSelection: "Drop this item again to confirm selection."
   missingSelection: "You need to have selected two blocks."
 
@@ -9,8 +9,8 @@ database:
 
 excepts:
   fatalError: "Mine! has experienced a fatal error. The plugin cannot keep operating in a secure manner. Mine will be disabled to prevent (potentially further) data loss / corruption."
-  invalidLangKey: "{key} is not a valid lang key for Mine!\nThis error can be ignored as the invalid key will have no effect."
-  invalidConfigKey: "{key} is not a valid config key for Mine!\nThis error can be ignored as the invalid key will have no effect."
+  invalidLangKey: "{key} is not a valid lang key for Mine!{newLine}This error can be ignored as the invalid key will have no effect."
+  invalidConfigKey: "{key} is not a valid config key for Mine!{newLine}This error can be ignored as the invalid key will have no effect."
   missingLangKey: "{key} could not be found in the lang file! Revering back to default."
   missingConfigKey: "{key} could not be found in the config file! Revering back to default."
   fileCreation: "The file {filePath} could not be created."

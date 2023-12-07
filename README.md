@@ -45,7 +45,8 @@ When a block is selected it will change to a marker block & light up. When two o
 - Players with a perm can see a list of all claims & info abt them.
 - Players with a perm can search though claims based on player name and/or claim name.
 
-## Misc:
+## Misc (temporary):
 Changing the world names will completely **BREAK** claims with this plugin.  
 The players are managed using their uuid, so changing your name **won't** have any impact.  
 If you delete the (path to db) then **all** data for clans, & member will **PERMANENTLY** be erased. Do not delete this file. If you wish to delete data see [TODO](https://www.youtube.com/watch?v=dQw4w9WgXcQ).  
+The key {newLine} is used in the config files instead of just putting a new line as to keep everything on the same line when editing the config files, which makes the process easier.

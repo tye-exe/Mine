@@ -57,7 +57,8 @@ public @NotNull String getResponse() {
 
   assert response != null;
 
-  return response;
+  //always replaces the newLine key with a new line.
+  return response.replaceAll("\\{"+Key.newLine+"}", "\n");
 }
 
 /**

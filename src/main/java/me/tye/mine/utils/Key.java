@@ -4,7 +4,7 @@ public enum Key {
 
   key(),
   filePath(),
-
+  newLine(),
   member();
 
 private String replaceWith = "";
