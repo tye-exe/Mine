@@ -1,20 +1,19 @@
 package me.tye.mine.utils;
 
-import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Member;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Iterator;
 
-import static me.tye.mine.Mine.loadedClaims;
-import static me.tye.mine.Mine.onlineMembers;
+import static me.tye.mine.Database.*;
+import static me.tye.mine.utils.TempConfigsStore.unloaderSleepTime;
 
 public class Unloader implements Runnable {
 
 private static Thread unloader = null;
 
 /**
- Creates a new unloader thread. This thread checks the cache that stores loaded clans, claims, members, & perms. Then removes any ones that are unloaded from that cache.
+ Creates a new unloader thread. This thread clears the caches every five mins.
  */
 public static void init() {
   if (unloader != null) return;
@@ -36,40 +35,33 @@ public static void terminate() {
 public void run() {
 
   while (true) {
-    //runs once a minuet
+
     try {
-      Thread.sleep(60000);
+      Thread.sleep(unloaderSleepTime);
     } catch (InterruptedException e) {
       return;
     }
 
-//    for (Clan clan : loadedClans.values()) {
-//      if (clan.isLoaded()) return;
-//    }
+    clansCache.clear();
 
-    //can't be enhanced for due to concurrent modification exception.
-    List<Claim> claims = new ArrayList<>(loadedClaims.values());
-    for (int i = 0; i < claims.size(); i++) {
-      if (claims.get(i).isLoaded()) continue;
+    claimsCache.clear();
 
-      loadedClaims.remove(claims.get(i).getClaimID());
+    permsCache.clear();
+
+    Collection<Member> values = memberCache.values();
+    synchronized (memberCache) {
+      Iterator<Member> iterator = values.iterator();
+
+      //not enhanced for loop to avoid potential concurrent modification exception.
+      while (iterator.hasNext()) {
+        Member member = iterator.next();
+
+        if (member.getOfflinePlayer().isOnline()) return;
+
+        memberCache.remove(member.getMemberID());
+      }
     }
 
-    //can't be enhanced for due to concurrent modification exception.
-    List<Member> members = new ArrayList<>(onlineMembers.values());
-    for (int i = 0; i < members.size(); i++) {
-      if (members.get(i).getOfflinePlayer().isOnline()) continue;
-
-      onlineMembers.remove(members.get(i).getMemberID());
-    }
-
-    //can't be enhanced for due to concurrent modification exception.
-//    List<Perm> perms = new ArrayList<>(loadedPerms.values());
-//    for (int i = 0; i < perms.size(); i++) {
-//      if (perms.get(i).isLoaded()) continue;
-//
-//      loadedPerms.remove(perms.get(i).getPermID());
-//    }
   }
 
 }

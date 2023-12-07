@@ -5,23 +5,26 @@ import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.clans.Perm;
 import me.tye.mine.utils.TempConfigsStore;
+import me.tye.mine.utils.Unloader;
 import org.bukkit.Material;
 import org.codehaus.plexus.util.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.UUID;
+import java.util.*;
 
 import static me.tye.mine.utils.Util.handleFatalException;
 
 public class Database {
+
+public static final Map<UUID, Clan> clansCache = Collections.synchronizedMap(new HashMap<>());
+public static final Map<UUID, Claim> claimsCache = Collections.synchronizedMap(new HashMap<>());
+public static final Map<UUID, Perm> permsCache = Collections.synchronizedMap(new HashMap<>());
+public static final Map<UUID, Member> memberCache = Collections.synchronizedMap(new HashMap<>());
+
+
 private static boolean initiated = false;
-
-
 private static Connection dbConnection;
 
 /**
@@ -121,6 +124,8 @@ public static void init() throws SQLException {
   dbConnection.commit();
   dbConnection.setAutoCommit(true);
 
+  Unloader.init();
+
   initiated = true;
 }
 
@@ -200,6 +205,11 @@ public static boolean purge() {
     newConnection.commit();
     newConnection.close();
 
+    claimsCache.clear();
+    memberCache.clear();
+    clansCache.clear();
+    memberCache.clear();
+
     initiated = false;
     init();
 
@@ -278,6 +288,8 @@ private static @NotNull String createWhere(@NotNull String column, @NotNull Coll
  * @return True if the clan exists.
  */
 public static boolean clanExists(@NotNull UUID clanID) {
+  if (clansCache.containsKey(clanID)) return true;
+
   return exists("clanID", "clans", clanID);
 }
 
@@ -287,6 +299,8 @@ public static boolean clanExists(@NotNull UUID clanID) {
  * @return True if the claim exists.
  */
 public static boolean claimExists(@NotNull UUID claimID) {
+  if (claimsCache.containsKey(claimID)) return true;
+
   return exists("claimID", "claims", claimID);
 }
 
@@ -296,6 +310,8 @@ public static boolean claimExists(@NotNull UUID claimID) {
  * @return True if the member exists.
  */
 public static boolean memberExists(@NotNull UUID memberID) {
+  if (memberCache.containsKey(memberID)) return true;
+
   return exists("memberID", "members", memberID);
 }
 
@@ -305,6 +321,8 @@ public static boolean memberExists(@NotNull UUID memberID) {
  * @return True if the perm exists.
  */
 public static boolean permExists(@NotNull UUID permID) {
+  if (permsCache.containsKey(permID)) return true;
+
   return exists("permID", "perms", permID);
 }
 
@@ -330,6 +348,8 @@ private static boolean exists(@NotNull String column, @NotNull String table, @No
 public static @Nullable Member getMember(@NotNull UUID memberID) throws RuntimeException {
   if (!memberExists(memberID)) return null;
 
+  Member member;
+
   try (ResultSet memberData = getResult(
       "SELECT * FROM members WHERE \"memberID\" == \""+memberID+"\";"
   )) {
@@ -351,12 +371,15 @@ public static @Nullable Member getMember(@NotNull UUID memberID) throws RuntimeE
       clanPermID = UUID.fromString(rawClanPermID);
     }
 
-    return new Member(memberID, clanID, clanPermID);
+    member = new Member(memberID, clanID, clanPermID);
 
   } catch (SQLException | IllegalArgumentException e) {
     killConnection();
     throw handleFatalException(e);
   }
+
+  memberCache.put(memberID, member);
+  return member;
 }
 
 /**
@@ -367,6 +390,8 @@ public static @Nullable Member getMember(@NotNull UUID memberID) throws RuntimeE
  */
 public static @Nullable Clan getClan(@NotNull UUID clanID) throws RuntimeException {
   if (!clanExists(clanID)) return null;
+
+  Clan clan;
 
   try (ResultSet clanData = getResult(
       "SELECT * FROM clans WHERE \"clanID\" == \""+clanID+"\";"
@@ -399,22 +424,27 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) throws RuntimeExcepti
       permIDs.add(UUID.fromString(perms.getString("permID")));
     }
 
-    return new Clan(clanID, claimIDs ,memberIDs, permIDs, clanName, clanDescription, renderingOutline);
+    clan = new Clan(clanID, claimIDs ,memberIDs, permIDs, clanName, clanDescription, renderingOutline);
 
   } catch (SQLException | IllegalArgumentException e) {
     killConnection();
     throw handleFatalException(e);
   }
+
+  clansCache.put(clanID, clan);
+  return clan;
 }
 
 /**
- Gets a claim from the database.
+ Gets a claim from the database & loads it into the cache.
  * @param claimID The uuid of the claim
  * @return The claim with this uuid. If the claim doesn't exist null will be returned.
  * @throws RuntimeException If there was an error querying the database.
  */
 public static @Nullable Claim getClaim(@NotNull UUID claimID) throws RuntimeException {
   if (!claimExists(claimID)) return null;
+
+  Claim claim;
 
   try (ResultSet claimData = getResult(
       "SELECT * FROM claims WHERE \"claimID\" == \""+claimID+"\";"
@@ -443,23 +473,28 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) throws RuntimeExce
         claimInChunks.add(chunks.getLong("chunkKey"));
       }
 
-      return new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, claimInChunks);
+      claim = new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, claimInChunks);
     }
 
   } catch (SQLException | IllegalArgumentException e) {
     killConnection();
     throw handleFatalException(e);
   }
+
+  claimsCache.put(claimID, claim);
+  return claim;
 }
 
 /**
- Gets a perm from the database.
+ Gets a perm from the database & loads it into the cache.
  * @param permId The uuid of the perm to get
  * @return The perm with this uuid. If the perm doesn't exist null will be returned.
  * @throws RuntimeException If there was an error querying the database.
  */
 public static @Nullable Perm getPerm(@NotNull UUID permId) throws RuntimeException {
   if (permExists(permId)) return null;
+
+  Perm perm;
 
   try (ResultSet permData = getResult(
       "SELECT * FROM perms WHERE \"permID\" == \""+permId+"\";"
@@ -470,17 +505,20 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) throws RuntimeExcepti
     String permName = permData.getString("name");
     String permDescription = permData.getString("description");
 
-    return new Perm(permId, permName, permDescription);
+    perm = new Perm(permId, permName, permDescription);
 
   } catch (SQLException | IllegalArgumentException e) {
     killConnection();
     throw handleFatalException(e);
   }
+
+  permsCache.put(perm.getPermID(), perm);
+  return perm;
 }
 
 /**
- Writes a member to the database.<br>
-  Use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
+ Writes a member to the database & puts it into the cache.<br>
+ You can use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
  * @param memberID The uuid of the member to create.
  * @throws RuntimeException If there was an error accessing the database.
  */
@@ -505,11 +543,13 @@ public static void createMember(@NotNull UUID memberID) throws RuntimeException 
     killConnection();
     throw handleFatalException(e);
   }
+
+  memberCache.put(memberID, new Member(memberID, null, null));
 }
 
 /**
- Writes a clan to the database.<br>
- Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
+ Writes a clan to the database & puts it into the cache.<br>
+ You can use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
  * @param newClan The new clan to write to the database.
  * @throws RuntimeException If there was an error accessing the database.
  */
@@ -563,11 +603,13 @@ public static void createClan(@NotNull Clan newClan) throws RuntimeException {
     killConnection();
     throw handleFatalException(e);
   }
+
+  clansCache.put(newClan.getClanID(), newClan);
 }
 
 /**
- Writes a new claim to the database<br>
- Use {@link #claimExists(UUID)} to check if the clan exists before creating a new one.
+ Writes a new claim to the database & puts it into the cache.<br>
+ You can use {@link #claimExists(UUID)} to check if the clan exists before creating a new one.
  * @param newClaim The new claim to write to the database.
  * @throws RuntimeException If there was an error accessing the database.
  */
@@ -611,12 +653,14 @@ public static void createClaim(@NotNull Claim newClaim) throws RuntimeException 
     killConnection();
     throw handleFatalException(e);
   }
+
+  claimsCache.put(newClaim.getClaimID(), newClaim);
 }
 
 
 /**
- Updates the database entry for an existing clan.<br>
- Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
+ Updates the database entry & cache for an existing clan.<br>
+ You can use {@link #clanExists(UUID)} to check if the clan exists before updating one.
  * @param updatedClan The clan to update.
  * @throws RuntimeException If there was an error accessing the database.
  */
@@ -706,5 +750,7 @@ public static void updateClan(@NotNull Clan updatedClan) throws RuntimeException
     killConnection();
     throw handleFatalException(e);
   }
+
+  clansCache.put(updatedClan.getClanID(), updatedClan);
 }
 }

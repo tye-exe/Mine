@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
-import static me.tye.mine.Mine.loadedClaims;
+import static me.tye.mine.Database.claimsCache;
 import static me.tye.mine.utils.Util.getBetween;
 import static me.tye.mine.utils.Util.rearrangeCorners;
 
@@ -42,14 +42,14 @@ private @NotNull HashSet<Long> chunkKeys;
  */
 public static @Nullable Claim getClaim(@NotNull UUID claimID) {
   //If the claim is loaded then it gets the claim object from the HashMap.
-  if (loadedClaims.containsKey(claimID)) {
-    return loadedClaims.get(claimID);
+  if (claimsCache.containsKey(claimID)) {
+    return claimsCache.get(claimID);
   }
 
   //If the claim isn't loaded but exists, gets it from the database & loads it.
   if (Database.claimExists(claimID)) {
     Claim claim = Database.getClaim(claimID);
-    loadedClaims.put(claimID, claim);
+    claimsCache.put(claimID, claim);
     return claim;
   }
 
@@ -124,21 +124,6 @@ public Claim(@NotNull UUID clanID, @NotNull UUID claimID, @NotNull String worldN
 public boolean isOverlapping() {
   return false;
   //TODO: implement
-}
-
-/**
- * @return True if any of the claims corners are within loaded chunks.
- */
-public boolean isLoaded() {
-  World world = Bukkit.getWorld(getWorldName());
-  return new Location(world, getX1(), getY1(), getZ1()).isWorldLoaded()
-         || new Location(world, getX2(), getY1(), getZ1()).isWorldLoaded()
-         || new Location(world, getX1(), getY1(), getZ2()).isWorldLoaded()
-         || new Location(world, getX2(), getY1(), getZ2()).isWorldLoaded()
-         || new Location(world, getX1(), getY2(), getZ1()).isWorldLoaded()
-         || new Location(world, getX2(), getY2(), getZ1()).isWorldLoaded()
-         || new Location(world, getX1(), getY2(), getZ2()).isWorldLoaded()
-         || new Location(world, getX2(), getY2(), getZ2()).isWorldLoaded();
 }
 
 public @NotNull UUID getClaimID() {

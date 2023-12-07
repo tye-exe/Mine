@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
-import static me.tye.mine.Mine.loadedClans;
-import static me.tye.mine.Mine.onlineMembers;
+import static me.tye.mine.Database.clansCache;
+import static me.tye.mine.Database.memberCache;
 import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
 
 public class Clan {
@@ -34,14 +34,14 @@ private @NotNull Collection<UUID> clanPerms = new ArrayList<>();
  */
 public static @Nullable Clan getClan(@NotNull UUID clanID) {
   //If the clan is loaded then it gets the clan object from the HashMap.
-  if (loadedClans.containsKey(clanID)) {
-    return loadedClans.get(clanID);
+  if (clansCache.containsKey(clanID)) {
+    return clansCache.get(clanID);
   }
 
   //If the clan isn't loaded but exists, gets it from the database & loads it.
   if (Database.clanExists(clanID)) {
     Clan clan = Database.getClan(clanID);
-    loadedClans.put(clanID, clan);
+    clansCache.put(clanID, clan);
     return clan;
   }
 
@@ -53,7 +53,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
  Saves the changes made to the clan.
  */
 public void save() {
-  loadedClans.put(clanID, this);
+  clansCache.put(clanID, this);
   Database.updateClan(this);
 }
 
@@ -77,7 +77,7 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
 
   Database.createClan(createdClan);
   //invalidate the member cache since the member is now in a clan.
-  onlineMembers.remove(creator.getMemberID());
+  memberCache.remove(creator.getMemberID());
 
   return createdClan;
 }
@@ -91,9 +91,9 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
  */
 public Clan(@NotNull UUID clanID, @NotNull Member creator)  {
   this.clanID = clanID;
-  this.clanMembers.add(creator.getClanID());
-  this.name = "The clan of "+creator.getOfflinePlayer().getName()+".";
-  this.description = "The clan description of "+creator.getOfflinePlayer().getName()+".";
+  addClanMember(creator);
+  setName("The clan of "+creator.getOfflinePlayer().getName()+".");
+  setDescription("The clan description of "+creator.getOfflinePlayer().getName()+".");
 }
 
 /**
@@ -109,13 +109,13 @@ public Clan(@NotNull UUID clanID, @NotNull Member creator)  {
  */
 public Clan(@NotNull UUID clanID, @NotNull Collection<UUID> clanClaims, @NotNull Collection<UUID> clanMembers, @NotNull Collection<UUID> clanPerms, @NotNull String clanName, @NotNull String clanDescription, @NotNull Material renderingOutline)  {
   this.clanID = clanID;
-  this.clanClaims = clanClaims;
-  this.clanMembers = clanMembers;
-  this.clanPerms = clanPerms;
+  setClanClaims(clanClaims);
+  setClanMembers(clanMembers);
+  setClanPerms(clanPerms);
 
-  this.name = clanName;
-  this.description = clanDescription;
-  this.renderingOutline = renderingOutline;
+  setName(clanName);
+  setDescription(clanDescription);
+  setRenderingOutline(renderingOutline);
 }
 
 /**
@@ -177,6 +177,67 @@ public @NotNull ArrayList<Perm> getClanPerms() {
 
 public @NotNull Collection<UUID> getMemberUUIDs() {
   return clanMembers;
+}
+
+
+public void setName(@NotNull String name) {
+  this.name = name;
+}
+
+public void setDescription(@NotNull String description) {
+  this.description = description;
+}
+
+/**
+ Sets the material that the outline of this clan will be rendered with.
+ * @param renderingOutline The material that will be rendered as the outline.
+ */
+public void setRenderingOutline(@NotNull Material renderingOutline) {
+  this.renderingOutline = renderingOutline;
+}
+
+/**
+ <b>This will overwrite any stored claims!</b>
+ * @param clanClaims The claim ids for the clan
+ * @throws NullPointerException If the collection contains null elements.
+ */
+public void setClanClaims(@NotNull Collection<UUID> clanClaims) throws NullPointerException {
+
+  if (clanClaims.contains(null)) throw new NullPointerException("Collection can't contain null elements");
+
+  this.clanClaims = clanClaims;
+}
+
+/**
+ <b>This will overwrite any stored members!</b>
+ * @param clanMembers The member ids for the clan.
+ * @throws NullPointerException If the collection contains null elements.
+ */
+public void setClanMembers(@NotNull Collection<UUID> clanMembers) throws NullPointerException {
+
+  if (clanMembers.contains(null)) throw new NullPointerException("Collection can't contain null elements");
+
+  this.clanMembers = clanMembers;
+}
+
+/**
+ <b>This will overwrite any stored perms!</b>
+ * @param clanPerms The perms ids for the clan.
+ * @throws NullPointerException If the collection contains null elements.
+ */
+public void setClanPerms(@NotNull Collection<UUID> clanPerms) throws NullPointerException {
+
+  if (clanPerms.contains(null)) throw new NullPointerException("Collection can't contain null elements");
+
+  this.clanPerms = clanPerms;
+}
+
+public void addClanMember(@NotNull Member member) throws NullPointerException {
+  if (member == null) throw new NullPointerException("member can't be null");
+
+  Collection<UUID> clanMembers = getMemberUUIDs();
+  clanMembers.add(member.getMemberID());
+  setClanMembers(clanMembers);
 }
 
 /**

@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 
-import static me.tye.mine.Mine.loadedClaims;
-import static me.tye.mine.Mine.onlineMembers;
+import static me.tye.mine.Database.claimsCache;
+import static me.tye.mine.Database.memberCache;
 import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
 import static me.tye.mine.utils.Util.getCoveredChunks;
 
@@ -34,14 +34,14 @@ private @Nullable UUID clanID;
  */
 public static @Nullable Member getMember(@NotNull UUID playerId) {
   //If the player is a member & is online then gets the member object from the HashMap.
-  if (onlineMembers.containsKey(playerId)) {
-    return onlineMembers.get(playerId);
+  if (memberCache.containsKey(playerId)) {
+    return memberCache.get(playerId);
   }
 
   //If the member isn't online but exists, get them from the database & load them.
   if (Database.memberExists(playerId)) {
     Member member = Database.getMember(playerId);
-    onlineMembers.put(playerId, member);
+    memberCache.put(playerId, member);
     return member;
   }
 
@@ -52,9 +52,7 @@ public static @Nullable Member getMember(@NotNull UUID playerId) {
  Creates a new member for the given player uuid. Member objects are tied to players by their uuid.
  */
 public static void createMember(@NotNull UUID playerId) {
-  Member member = new Member(playerId, null, null);
   Database.createMember(playerId);
-  onlineMembers.put(playerId, member);
 }
 
 /**
@@ -65,7 +63,7 @@ public static void registerMember(@NotNull UUID memberID) {
   Member member = Database.getMember(memberID);
   if (member == null) return;
 
-  onlineMembers.put(memberID, member);
+  memberCache.put(memberID, member);
 }
 
 
@@ -124,7 +122,7 @@ public void renderNearbyClaims(int blockRadius) {
 
   for (Long chunkKey : coveredChunks) {
 
-    for (Claim claim : loadedClaims.values()) {
+    for (Claim claim : claimsCache.values()) {
       if (!claim.getChunkKeys().contains(chunkKey)) continue;
 
       claimsToRender.add(claim);

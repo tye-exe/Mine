@@ -23,4 +23,5 @@ public static final Material lastSelectedMaterial = Material.ORANGE_GLAZED_TERRA
 public static final Material outlineMaterial = Material.RED_STAINED_GLASS;
 public static final File database = new File(dataFolder.getAbsolutePath() + File.separator + "database");
 public static final int selectionRenderRadius = 32;
+public static final int unloaderSleepTime = 300000; //5 mins
 }
