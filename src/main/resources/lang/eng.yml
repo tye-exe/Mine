@@ -20,3 +20,4 @@ excepts:
 
 member:
   alreadyInClan: "{Member} is already in a clan!"
+  badJoin: "Could not create an entry for you in the claims plugin Mine!{newLine}Please report this issue to your server admin.{newLine}If you are the server admin report this to https://github.com/Mapty231/Mine/issues"

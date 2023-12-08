@@ -14,6 +14,7 @@ public enum Lang {
   pointer_missingSelection,
 
   member_alreadyInClan,
+  member_badJoin,
 
   database_noMember,
   database_noClan,

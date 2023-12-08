@@ -32,28 +32,10 @@ private @Nullable UUID clanID;
  */
 public static @Nullable Member getMember(@NotNull UUID playerId) {
   //If the member doesn't exist return null
-  if (Database.memberExists(playerId)) return null;
+  if (!Database.memberExists(playerId)) return null;
 
   return Database.getMember(playerId);
 }
-
-/**
- Creates a new member for the given player uuid. Member objects are tied to players by their uuid.
- */
-public static void createMember(@NotNull UUID playerId) {
-  Database.createMember(playerId);
-}
-
-///**
-// If the given ID is of an existing member, then put the member into the cache.
-// * @param memberID The uuid of the member.
-// */
-//public static void registerMember(@NotNull UUID memberID) {
-//  Member member = Database.getMember(memberID);
-//  if (member == null) return;
-//
-//  memberCache.put(memberID, member);
-//}
 
 
 /**
@@ -109,12 +91,13 @@ public void renderNearbyClaims(int blockRadius) {
 
   ArrayList<Claim> claimsToRender = new ArrayList<>();
 
+  //Adds all the claims surrounding the player.
   for (Long chunkKey : coveredChunks) {
 
-    for (Claim claim : Database.()) {
-      if (!claim.getChunkKeys().contains(chunkKey)) continue;
+    for (Long databaseChunkKeys : Database.getChunkKeys()) {
+      if (!databaseChunkKeys.equals(chunkKey)) continue;
 
-      claimsToRender.add(claim);
+      claimsToRender.addAll(Database.getClaims(chunkKey));
     }
 
   }

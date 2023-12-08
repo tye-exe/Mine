@@ -1,5 +1,8 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Member;
+import me.tye.mine.utils.Lang;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,7 +20,14 @@ public static void playerJoin(PlayerJoinEvent e) {
     Database.createMember(player.getUniqueId());
   }
 
-  memberCache.put()
+  Member member = Database.getMember(player.getUniqueId());
+
+  if (member == null) {
+    player.kick(Component.text(Lang.member_badJoin.getResponse()));
+    return;
+  }
+
+  memberCache.put(member.getMemberID(), member);
 
 }
 }

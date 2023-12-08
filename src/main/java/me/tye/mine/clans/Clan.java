@@ -32,7 +32,7 @@ private @NotNull Collection<UUID> clanPerms = new ArrayList<>();
  */
 public static @Nullable Clan getClan(@NotNull UUID clanID) {
   //If the clan doesn't exist return null
-  if (Database.clanExists(clanID)) return null;
+  if (!Database.clanExists(clanID)) return null;
 
   return Database.getClan(clanID);
 }

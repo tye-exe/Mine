@@ -22,7 +22,7 @@ private String description;
  */
 public static @Nullable Perm getPerm(@NotNull UUID permID) {
   //If the perm doesn't exist return null
-  if (Database.permExists(permID)) return null;
+  if (!Database.permExists(permID)) return null;
 
   return Database.getPerm(permID);
 }

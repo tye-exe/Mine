@@ -138,34 +138,48 @@ public static void init() throws SQLException {
  * @throws FatalDatabaseException If a connection to the database couldn't be established.
  */
 private static @NotNull Connection getDbConnection() throws FatalDatabaseException {
+  //  try {
+  //    //Attempts to reconnect to the database if it has lost connection
+  //    if (dbConnection.isClosed()) {
+  //      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+  //      String databaseUrl = "jdbc:sqlite:"+databasePath;
+  //
+  //      dbConnection = DriverManager.getConnection(databaseUrl);
+  //    }
+  //
+  //    return dbConnection;
+  //
+  //  } catch (SQLException e) {
+  //
+  //    //If there was an error determining if the database lost connection then try to establish a new connection.
+  //    try {
+  //      dbConnection = null;
+  //
+  //      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+  //      String databaseUrl = "jdbc:sqlite:"+databasePath;
+  //
+  //      dbConnection = DriverManager.getConnection(databaseUrl);
+  //      return dbConnection;
+  //
+  //    } catch (SQLException ex) {
+  //      throw handleFatalException(ex);
+  //    }
+  //
+  //  }
+
   try {
-    //Attempts to reconnect to the database if it has lost connection
-    if (dbConnection.isClosed()) {
-      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
-      String databaseUrl = "jdbc:sqlite:"+databasePath;
+    dbConnection.close();
 
-      dbConnection = DriverManager.getConnection(databaseUrl);
-    }
+    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
+    String databaseUrl = "jdbc:sqlite:" + databasePath;
 
+    dbConnection = DriverManager.getConnection(databaseUrl);
     return dbConnection;
 
   } catch (SQLException e) {
-
-    //If there was an error determining if the database lost connection then try to establish a new connection.
-    try {
-      dbConnection = null;
-
-      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
-      String databaseUrl = "jdbc:sqlite:"+databasePath;
-
-      dbConnection = DriverManager.getConnection(databaseUrl);
-      return dbConnection;
-
-    } catch (SQLException ex) {
-      throw handleFatalException(ex);
-    }
-
+    throw handleFatalException(e);
   }
+
 }
 
 /**
@@ -763,10 +777,47 @@ public static void updateClan(@NotNull Clan updatedClan) throws FatalDatabaseExc
   clansCache.put(updatedClan.getClanID(), updatedClan);
 }
 
-public static Collection<Long> getChunkKeys() throws RuntimeException {
-  try (ResultSet resultSet = getResult(
+/**
+ * @return The chunks keys of every claim.
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull Collection<Long> getChunkKeys() throws FatalDatabaseException {
+  try (ResultSet databaseChunkKeys = getResult(
       "SELECT DISTINCT (chunkKey) FROM claimedChunks"
   )) {
+
+    ArrayList<Long> chunkKeys = new ArrayList<>();
+
+    while (databaseChunkKeys.next()) {
+      chunkKeys.add(databaseChunkKeys.getLong("chunkKey"));
+    }
+
+    return chunkKeys;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+}
+
+/**
+ * @param chunkKey The chunk key.
+ * @return Claims that are in the chunk represented by the given chunk key. If the database doesn't contain any chunks with this key then an empty list will be returned
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull List<Claim> getClaims(@NotNull Long chunkKey) throws FatalDatabaseException {
+  try (ResultSet claimIDs = getResult(
+      "SELECT DISTINCT (claimID) FROM claimedChunks WHERE \"chunkKey\" == \""+chunkKey+"\""
+  )) {
+
+    ArrayList<Claim> claims = new ArrayList<>();
+
+    while (claimIDs.next()) {
+      UUID claimID = UUID.fromString(claimIDs.getString("claimID"));
+      claims.add(getClaim(claimID));
+    }
+
+    return claims;
 
   } catch (SQLException e) {
     killConnection();
