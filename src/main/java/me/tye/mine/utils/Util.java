@@ -1,6 +1,7 @@
 package me.tye.mine.utils;
 
 import me.tye.mine.Mine;
+import me.tye.mine.errors.FatalDatabaseException;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -353,31 +354,24 @@ public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location firstCor
   coveredChunkKeys.add(cornerOne.getChunk().getChunkKey());
   coveredChunkKeys.add(cornerTwo.getChunk().getChunkKey());
 
-  int oneX = cornerOne.getBlockX();
-  int oneZ = cornerOne.getBlockZ();
-
   int twoX = cornerTwo.getBlockX();
   int twoZ = cornerTwo.getBlockZ();
 
 
-  Location cornerClone = cornerOne.clone();
+  Location movingZCorner = cornerOne.clone();
 
-  //Varies which way the loops will iterate biased on the locations positions relative to each other.
-  if (twoX > oneX && twoZ > oneZ) {
+  //Adds all covered chunks in the z direction.
+  while (movingZCorner.getBlockZ() < twoZ) {
 
-    //Adds all covered chunks in the z direction.
-    while (cornerClone.getBlockZ() < twoZ) {
+    Location movingXCorner = movingZCorner.clone();
 
-      //Adds all covered chunks in the x direction.
-      while (cornerClone.getBlockX() < twoX) {
-        coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-        cornerClone.add(16, 0, 0);
-      }
-
-      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-      cornerClone.add(0, 0, 16);
+    //Adds all covered chunks in the x direction for this z.
+    while (movingXCorner.getBlockX() < twoX) {
+      coveredChunkKeys.add(movingXCorner.getChunk().getChunkKey());
+      movingXCorner.add(16, 0, 0);
     }
 
+    movingZCorner.add(0, 0, 16);
   }
 
 
@@ -465,15 +459,15 @@ public static @NotNull Location[] rearrangeCorners(Location firstCorner, Locatio
       Math.max(y1, y2),
       Math.max(z1, z2));
 
-   return new Location[]{cornerOne, cornerTwo};
+  return new Location[]{cornerOne, cornerTwo};
 }
 
 /**
  This method sends a message to all online op players & to the console that Mine has encountered an error that it can't recover from, Then disables Mine! as a plugin.
  * @param fatalThrowable The error that Mine! can't recover from.
- * @return The RuntimeException to throw.
+ * @return The FatalDatabaseException to throw.
  */
-public static RuntimeException handleFatalException(Throwable fatalThrowable) {
+public static FatalDatabaseException handleFatalException(Throwable fatalThrowable) {
   //TODO: lock the plugin in a stasis instead of shutting down.
 
   for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -485,7 +479,7 @@ public static RuntimeException handleFatalException(Throwable fatalThrowable) {
   log.severe(Lang.excepts_fatalError.getResponse());
   Bukkit.getPluginManager().disablePlugin(plugin);
 
-  return new RuntimeException(fatalThrowable);
+  return new FatalDatabaseException(fatalThrowable);
 }
 
 }

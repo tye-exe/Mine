@@ -8,8 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.UUID;
 
-import static me.tye.mine.Database.permsCache;
-
 public class Perm {
 
 private final UUID permID;
@@ -23,20 +21,10 @@ private String description;
  * @return The perm with this uuid, or null if non exists.
  */
 public static @Nullable Perm getPerm(@NotNull UUID permID) {
-  //If the perm is loaded then it gets the perm object from the HashMap.
-  if (permsCache.containsKey(permID)) {
-    return permsCache.get(permID);
-  }
+  //If the perm doesn't exist return null
+  if (!Database.permExists(permID)) return null;
 
-  //If the perm isn't loaded but exists, gets it from the database & loads it.
-  if (Database.permExists(permID)) {
-    Perm perm = Database.getPerm(permID);
-    permsCache.put(permID, perm);
-    return perm;
-  }
-
-  //returns null if the perm can't be found.
-  return null;
+  return Database.getPerm(permID);
 }
 
 

@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
 
-import static me.tye.mine.Database.claimsCache;
-import static me.tye.mine.Database.memberCache;
 import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
 import static me.tye.mine.utils.Util.getCoveredChunks;
 
@@ -33,37 +31,10 @@ private @Nullable UUID clanID;
  * @return The Member class for this player, or null if the member can't be gotten form the database.
  */
 public static @Nullable Member getMember(@NotNull UUID playerId) {
-  //If the player is a member & is online then gets the member object from the HashMap.
-  if (memberCache.containsKey(playerId)) {
-    return memberCache.get(playerId);
-  }
+  //If the member doesn't exist return null
+  if (!Database.memberExists(playerId)) return null;
 
-  //If the member isn't online but exists, get them from the database & load them.
-  if (Database.memberExists(playerId)) {
-    Member member = Database.getMember(playerId);
-    memberCache.put(playerId, member);
-    return member;
-  }
-
-  return null;
-}
-
-/**
- Creates a new member for the given player uuid. Member objects are tied to players by their uuid.
- */
-public static void createMember(@NotNull UUID playerId) {
-  Database.createMember(playerId);
-}
-
-/**
- If the given ID is of an existing member, then put the member into the cache.
- * @param memberID The uuid of the member.
- */
-public static void registerMember(@NotNull UUID memberID) {
-  Member member = Database.getMember(memberID);
-  if (member == null) return;
-
-  memberCache.put(memberID, member);
+  return Database.getMember(playerId);
 }
 
 
@@ -120,12 +91,13 @@ public void renderNearbyClaims(int blockRadius) {
 
   ArrayList<Claim> claimsToRender = new ArrayList<>();
 
+  //Adds all the claims surrounding the player.
   for (Long chunkKey : coveredChunks) {
 
-    for (Claim claim : claimsCache.values()) {
-      if (!claim.getChunkKeys().contains(chunkKey)) continue;
+    for (Long databaseChunkKeys : Database.getChunkKeys()) {
+      if (!databaseChunkKeys.equals(chunkKey)) continue;
 
-      claimsToRender.add(claim);
+      claimsToRender.addAll(Database.getClaims(chunkKey));
     }
 
   }

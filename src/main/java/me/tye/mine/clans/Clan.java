@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
-import static me.tye.mine.Database.clansCache;
-import static me.tye.mine.Database.memberCache;
 import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
 
 public class Clan {
@@ -33,27 +31,16 @@ private @NotNull Collection<UUID> clanPerms = new ArrayList<>();
  * @return The clan, or null if the clan doesn't exist.
  */
 public static @Nullable Clan getClan(@NotNull UUID clanID) {
-  //If the clan is loaded then it gets the clan object from the HashMap.
-  if (clansCache.containsKey(clanID)) {
-    return clansCache.get(clanID);
-  }
+  //If the clan doesn't exist return null
+  if (!Database.clanExists(clanID)) return null;
 
-  //If the clan isn't loaded but exists, gets it from the database & loads it.
-  if (Database.clanExists(clanID)) {
-    Clan clan = Database.getClan(clanID);
-    clansCache.put(clanID, clan);
-    return clan;
-  }
-
-  //returns null if the clan can't be found.
-  return null;
+  return Database.getClan(clanID);
 }
 
 /**
  Saves the changes made to the clan.
  */
 public void save() {
-  clansCache.put(clanID, this);
   Database.updateClan(this);
 }
 
@@ -74,11 +61,7 @@ public static @Nullable Clan createClan(@NotNull Member creator) {
   }
 
   Clan createdClan = new Clan(clanID, creator);
-
   Database.createClan(createdClan);
-  //invalidate the member cache since the member is now in a clan.
-  memberCache.remove(creator.getMemberID());
-
   return createdClan;
 }
 

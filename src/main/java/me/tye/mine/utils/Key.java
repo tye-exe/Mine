@@ -4,7 +4,7 @@ public enum Key {
 
   key(),
   filePath(),
-
+  newLine(),
   member();
 
 private String replaceWith = "";
@@ -24,5 +24,13 @@ public Key replaceWith(String string) {
  */
 public String getReplaceWith() {
   return replaceWith;
+}
+
+/**
+ * @return The string value of this key in LOWER case.
+ */
+@Override
+public String toString() {
+  return super.toString().toLowerCase();
 }
 }
