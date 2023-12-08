@@ -132,53 +132,63 @@ public static void init() throws SQLException {
 }
 
 /**
+ Closes the connection to the database.<br>
+ The {@link #init()} method should be run to reestablish a new connection.
+ */
+public static void close() {
+  killConnection();
+  dbConnection = null;
+  initiated = false;
+}
+
+/**
  Gets the connection to the database.<br>
  <b>Don't use this method with auto closable. The connection to the database should stay open.</b>
  * @return The connection to the database.
  * @throws FatalDatabaseException If a connection to the database couldn't be established.
  */
 private static @NotNull Connection getDbConnection() throws FatalDatabaseException {
-  //  try {
-  //    //Attempts to reconnect to the database if it has lost connection
-  //    if (dbConnection.isClosed()) {
-  //      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
-  //      String databaseUrl = "jdbc:sqlite:"+databasePath;
-  //
-  //      dbConnection = DriverManager.getConnection(databaseUrl);
-  //    }
-  //
-  //    return dbConnection;
-  //
-  //  } catch (SQLException e) {
-  //
-  //    //If there was an error determining if the database lost connection then try to establish a new connection.
-  //    try {
-  //      dbConnection = null;
-  //
-  //      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
-  //      String databaseUrl = "jdbc:sqlite:"+databasePath;
-  //
-  //      dbConnection = DriverManager.getConnection(databaseUrl);
-  //      return dbConnection;
-  //
-  //    } catch (SQLException ex) {
-  //      throw handleFatalException(ex);
-  //    }
-  //
-  //  }
-
   try {
-    dbConnection.close();
+    //Attempts to reconnect to the database if it has lost connection
+    if (dbConnection.isClosed()) {
+      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+      String databaseUrl = "jdbc:sqlite:"+databasePath;
 
-    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
-    String databaseUrl = "jdbc:sqlite:" + databasePath;
+      dbConnection = DriverManager.getConnection(databaseUrl);
+    }
 
-    dbConnection = DriverManager.getConnection(databaseUrl);
     return dbConnection;
 
   } catch (SQLException e) {
-    throw handleFatalException(e);
+
+    //If there was an error determining if the database lost connection then try to establish a new connection.
+    try {
+      dbConnection = null;
+
+      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+      String databaseUrl = "jdbc:sqlite:"+databasePath;
+
+      dbConnection = DriverManager.getConnection(databaseUrl);
+      return dbConnection;
+
+    } catch (SQLException ex) {
+      throw handleFatalException(ex);
+    }
+
   }
+
+  //  try {
+  //    dbConnection.close();
+  //
+  //    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
+  //    String databaseUrl = "jdbc:sqlite:" + databasePath;
+  //
+  //    dbConnection = DriverManager.getConnection(databaseUrl);
+  //    return dbConnection;
+  //
+  //  } catch (SQLException e) {
+  //    throw handleFatalException(e);
+  //  }
 
 }
 
@@ -815,6 +825,55 @@ public static @NotNull List<Claim> getClaims(@NotNull Long chunkKey) throws Fata
     while (claimIDs.next()) {
       UUID claimID = UUID.fromString(claimIDs.getString("claimID"));
       claims.add(getClaim(claimID));
+    }
+
+    return claims;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+}
+
+/**
+ * @return All the claims from the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull List<Claim> getClaims() throws FatalDatabaseException {
+  ArrayList<Claim> claims = new ArrayList<>();
+
+  try (ResultSet claimData = getResult(
+      "SELECT * FROM claims"
+  )) {
+
+    //goes through all the claims in the database.
+    while (claimData.next()) {
+
+      String worldName = claimData.getString("worldName");
+      int X1 = claimData.getInt("X1");
+      int X2 = claimData.getInt("X2");
+      int Y1 = claimData.getInt("Y1");
+      int Y2 = claimData.getInt("Y2");
+      int Z1 = claimData.getInt("Z1");
+      int Z2 = claimData.getInt("Z2");
+      UUID clanID = UUID.fromString(claimData.getString("clanID"));
+      UUID claimID = UUID.fromString(claimData.getString("claimID"));
+
+
+      //Gets all the chunks that this claim is in
+      try (ResultSet chunks = getResult(
+          "SELECT chunkKey FROM claimedChunks WHERE \"claimID\" == \""+claimID+"\""
+      )) {
+
+        HashSet<Long> claimInChunks = new HashSet<>();
+
+        while (chunks.next()) {
+          claimInChunks.add(chunks.getLong("chunkKey"));
+        }
+
+        claims.add(new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, claimInChunks));
+      }
+
     }
 
     return claims;

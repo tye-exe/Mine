@@ -58,6 +58,8 @@ public void onDisable() {
 
     //Reload support - destroys the unlaoder.
     Unloader.terminate();
+
+    Database.close();
 }
 
 /**
