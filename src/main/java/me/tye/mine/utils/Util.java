@@ -354,26 +354,24 @@ public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location firstCor
   coveredChunkKeys.add(cornerOne.getChunk().getChunkKey());
   coveredChunkKeys.add(cornerTwo.getChunk().getChunkKey());
 
-  int oneX = cornerOne.getBlockX();
-  int oneZ = cornerOne.getBlockZ();
-
   int twoX = cornerTwo.getBlockX();
   int twoZ = cornerTwo.getBlockZ();
 
 
-  Location cornerClone = cornerOne.clone();
+  Location movingZCorner = cornerOne.clone();
 
   //Adds all covered chunks in the z direction.
-  while (cornerClone.getBlockZ() < twoZ) {
+  while (movingZCorner.getBlockZ() < twoZ) {
 
-    //Adds all covered chunks in the x direction.
-    while (cornerClone.getBlockX() < twoX) {
-      coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-      cornerClone.add(16, 0, 0);
+    Location movingXCorner = movingZCorner.clone();
+
+    //Adds all covered chunks in the x direction for this z.
+    while (movingXCorner.getBlockX() < twoX) {
+      coveredChunkKeys.add(movingXCorner.getChunk().getChunkKey());
+      movingXCorner.add(16, 0, 0);
     }
 
-    coveredChunkKeys.add(cornerClone.getChunk().getChunkKey());
-    cornerClone.add(0, 0, 16);
+    movingZCorner.add(0, 0, 16);
   }
 
 
