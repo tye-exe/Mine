@@ -16,6 +16,7 @@ pointer - This command gives you a [pointer](#pointer) item to select an area wi
 
 ### Pointer:
 This item can be obtained by using the "/. pointer" [command](#commands).  
+While holding this item, the outline of nearby claims will be rendered. This includes claims from you own clan & others.  
 Left-clicking with the pointer will set a corner of your claim. Right-clicking will set the other corner. Clicking again will change the selected block.  
 When a block is selected it will change to a marker block & light up. When two or more blocks are selected an outline of Red Glass will be rendered along the edges of the selected area.
 
