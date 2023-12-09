@@ -176,20 +176,6 @@ private static @NotNull Connection getDbConnection() throws FatalDatabaseExcepti
     }
 
   }
-
-  //  try {
-  //    dbConnection.close();
-  //
-  //    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
-  //    String databaseUrl = "jdbc:sqlite:" + databasePath;
-  //
-  //    dbConnection = DriverManager.getConnection(databaseUrl);
-  //    return dbConnection;
-  //
-  //  } catch (SQLException e) {
-  //    throw handleFatalException(e);
-  //  }
-
 }
 
 /**
@@ -197,6 +183,10 @@ private static @NotNull Connection getDbConnection() throws FatalDatabaseExcepti
  */
 private static void killConnection() {
   try {
+    if (!dbConnection.getAutoCommit()) {
+      dbConnection.commit();
+    }
+
     dbConnection.close();
 
     //Doesn't throw fatal error since this will be called before fatal database errors.
@@ -688,6 +678,55 @@ public static void createClaim(@NotNull Claim newClaim) throws FatalDatabaseExce
   }
 
   claimsCache.put(newClaim.getClaimID(), newClaim);
+}
+
+
+/**
+ Updates the database entry & cache for an existing member.<br>
+ You can use {@link #memberExists(UUID)} to check if the member exists before updating them.
+ * @param updatedMember The member to update.
+ * @throws FatalDatabaseException If there was an error accessing the database.
+ */
+public static void updateMember(@NotNull Member updatedMember) throws FatalDatabaseException {
+  if (!memberExists(updatedMember.getMemberID())) return;
+
+  try {
+    Connection dbConnection = getDbConnection();
+
+    PreparedStatement clanUpdate = dbConnection.prepareStatement("""
+            UPDATE members SET
+            clanPermID = ?,
+            clanID = ?,
+            WHERE memberID == ?;
+            """);
+
+
+    UUID clanPermID = updatedMember.getClanPermID();
+    if (clanPermID == null) {
+      clanUpdate.setNull(1, Types.NULL);
+    }
+    else {
+      clanUpdate.setString(1, clanPermID.toString());
+    }
+
+    UUID clanID = updatedMember.getClanID();
+    if (clanID == null) {
+      clanUpdate.setNull(2, Types.NULL);
+    }
+    else {
+      clanUpdate.setString(2, clanID.toString());
+    }
+
+    clanUpdate.setString(3, updatedMember.getMemberID().toString());
+
+    clanUpdate.executeUpdate();
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+
+  memberCache.put(updatedMember.getMemberID(), updatedMember);
 }
 
 
