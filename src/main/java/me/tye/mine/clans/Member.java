@@ -10,9 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.UUID;
+import java.util.*;
 
 import static me.tye.mine.utils.TempConfigsStore.outlineMaterial;
 import static me.tye.mine.utils.Util.getCoveredChunks;
@@ -71,10 +69,85 @@ public @Nullable Player getPlayer() {
   return Bukkit.getPlayer(getMemberID());
 }
 
+public @NotNull UUID getMemberID() {
+  return memberID;
+}
 
-public void renderNearbyClaims(int blockRadius) {
+public @Nullable UUID getClanPermID() {
+  return clanPermID;
+}
+
+public @Nullable UUID getClanID() {
+  return clanID;
+}
+
+public @Nullable Clan getClan() {
+  UUID clanID = getClanID();
+  if (clanID == null) return null;
+
+  return Database.getClan(clanID);
+}
+
+/**
+ Saves the changes made to the member.
+ */
+public void save() {
+  Database.updateMember(this);
+}
+
+/**
+ Stores a list of claim outlines that have been rendered for a member with there ID.*/
+private static final @NotNull HashMap<UUID, List<BlockState>> nearbyOutlinesMap = new HashMap<>();
+
+/**
+ Renders the nearby claims for the member & only the member.
+ * @param blockRadius The radius in which nearby claims should be rendered.
+ */
+public void outlineNearbyClaims(int blockRadius) {
   Player player = getPlayer();
   if (player == null) return;
+
+  List<BlockState> nearbyOutlines = getNearbyClaimOutlines(blockRadius);
+
+  Material clanOutline = outlineMaterial;
+
+  //tries to get the outline material from a clan
+  Clan clan = getClan();
+  if (clan != null) {
+    clanOutline = clan.getOutlineMaterial();
+  }
+
+  for (int i = 0; i < nearbyOutlines.size(); i++) {
+    BlockState state = nearbyOutlines.get(i);
+    state.setType(clanOutline);
+    nearbyOutlines.set(i, state);
+  }
+
+  player.sendBlockChanges(nearbyOutlines);
+
+  nearbyOutlinesMap.put(getMemberID(), nearbyOutlines);
+}
+
+/**
+ Reverts the rendered claim outlines that have been rendered for this member to the server side world state.
+ */
+public void unoutlineClaims() {
+  Player player = getPlayer();
+  if (player == null) return;
+
+  List<BlockState> nearbyOutlines = nearbyOutlinesMap.get(getMemberID());
+
+  if (nearbyOutlines == null) return;
+
+  //using player.sendBlockChanges() for the restoring bugs results in a bug within paper version 1.20.2 #318
+  for (BlockState outlineState : nearbyOutlines) {
+    player.sendBlockChange(outlineState.getLocation(), outlineState.getLocation().getBlock().getBlockData());
+  }
+}
+
+private List<BlockState> getNearbyClaimOutlines(int blockRadius) {
+  Player player = getPlayer();
+  if (player == null) return new ArrayList<>();
 
   Location playerLocation = player.getLocation();
 
@@ -82,8 +155,8 @@ public void renderNearbyClaims(int blockRadius) {
   Location cornerTwo = player.getLocation();
 
   //Creates two location on opposite sides of each other to render the claims in.
-  cornerOne.subtract(blockRadius + playerLocation.getBlockX(), 0, blockRadius + playerLocation.getBlockZ());
-  cornerTwo.add(blockRadius + playerLocation.getBlockX(), 0, blockRadius + playerLocation.getBlockZ());
+  cornerOne.subtract(blockRadius, 0, blockRadius);
+  cornerTwo.add(blockRadius, 0, blockRadius);
 
   //Gets the keys of all the chunks surrounding the player at the given radius.
   HashSet<Long> coveredChunks = getCoveredChunks(cornerOne, cornerTwo);
@@ -107,33 +180,12 @@ public void renderNearbyClaims(int blockRadius) {
   //gets the parts of the claims to render
   for (Claim claim : claimsToRender) {
 
-    Material clanOutline = outlineMaterial;
-    Clan clan = claim.getClan();
-
-    //Sets the outline material to the clans one if the clan can be retrieved.
-    if (clan != null) clanOutline = clan.getOutlineMaterial();
-
     for (Location location : claim.getOutlineWithin(cornerOne, cornerTwo)) {
-      BlockState state = location.getBlock().getState();
-      state.setType(clanOutline);
-      renderedOutline.add(state);
+      renderedOutline.add(location.getBlock().getState());
     }
 
   }
 
-  player.sendBlockChanges(renderedOutline);
-}
-
-
-public @NotNull UUID getMemberID() {
-  return memberID;
-}
-
-public @Nullable UUID getClanPermID() {
-  return clanPermID;
-}
-
-public @Nullable UUID getClanID() {
-  return clanID;
+  return renderedOutline;
 }
 }

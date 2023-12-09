@@ -357,6 +357,8 @@ public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location firstCor
   int twoX = cornerTwo.getBlockX();
   int twoZ = cornerTwo.getBlockZ();
 
+  ArrayList<Integer> x = new ArrayList<>();
+  ArrayList<Integer> y = new ArrayList<>();
 
   Location movingZCorner = cornerOne.clone();
 
@@ -368,6 +370,8 @@ public static @NotNull HashSet<Long> getCoveredChunks(@NotNull Location firstCor
     //Adds all covered chunks in the x direction for this z.
     while (movingXCorner.getBlockX() < twoX) {
       coveredChunkKeys.add(movingXCorner.getChunk().getChunkKey());
+      x.add(movingXCorner.getChunk().getX());
+      y.add(movingXCorner.getChunk().getZ());
       movingXCorner.add(16, 0, 0);
     }
 
@@ -482,4 +486,13 @@ public static FatalDatabaseException handleFatalException(Throwable fatalThrowab
   return new FatalDatabaseException(fatalThrowable);
 }
 
+/**
+ * @param object The given object.
+ * @return The string value of the given object, or null if the given object is null.
+ */
+public static @Nullable String getStringOrNull(@Nullable Object object) {
+  if (object == null) return null;
+
+  return object.toString();
+}
 }

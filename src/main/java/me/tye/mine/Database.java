@@ -922,4 +922,45 @@ public static @NotNull List<Claim> getClaims() throws FatalDatabaseException {
     throw handleFatalException(e);
   }
 }
+
+/**
+ * @return All the members from the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull List<Member> getMembers() throws FatalDatabaseException {
+  ArrayList<Member> members = new ArrayList<>();
+
+  try (ResultSet memberData = getResult(
+      "SELECT * FROM members"
+  )) {
+
+    //goes through all the claims in the database.
+    while (memberData.next()) {
+
+      UUID memberID = UUID.fromString(memberData.getString("memberID"));
+      String rawClanID = memberData.getString("clanID");
+      String rawClanPermID = memberData.getString("clanPermID");
+
+      UUID clanID = null;
+      UUID clanPermID = null;
+
+
+      if (rawClanID != null) {
+        clanID = UUID.fromString(rawClanID);
+      }
+
+      if (rawClanPermID != null) {
+        clanPermID = UUID.fromString(rawClanPermID);
+      }
+
+      members.add(new Member(memberID, clanID, clanPermID));
+    }
+
+    return members;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+}
 }

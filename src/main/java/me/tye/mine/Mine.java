@@ -1,5 +1,6 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Member;
 import me.tye.mine.utils.Configs;
 import me.tye.mine.utils.Lang;
 import me.tye.mine.utils.Unloader;
@@ -56,9 +57,17 @@ public void onDisable() {
     //Reload support - If a reload happens when blocks are selected then they are restored.
     selections.values().forEach((Selection::restore));
 
+    //Reload support - removes the outlines of nearby claims from players.
+    for (Member member : Database.getMembers()) {
+        if (!member.getOfflinePlayer().isOnline()) continue;
+
+        member.unoutlineClaims();
+    }
+
     //Reload support - destroys the unlaoder.
     Unloader.terminate();
 
+    //Reload support - terminates the connection to the database.
     Database.close();
 }
 

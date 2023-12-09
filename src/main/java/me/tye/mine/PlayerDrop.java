@@ -85,6 +85,7 @@ private static boolean dropPointer(@NotNull Item droppedItem, @NotNull Player pl
 
   selections.remove(playerId).restore();
   droppedItem.remove();
+  member.unoutlineClaims();
 
   if (!member.isInClan()) {
     Clan clan = Clan.createClan(member);

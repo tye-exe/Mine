@@ -1,5 +1,6 @@
 package me.tye.mine;
 
+import me.tye.mine.clans.Member;
 import me.tye.mine.utils.Identifier;
 import me.tye.mine.utils.TempConfigsStore;
 import org.bukkit.command.Command;
@@ -45,7 +46,7 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
 
     if (!player.isOp()) return true;
 
-    if (!player.getName().equals("testing32") || !player.getName().equals("OClocky")) return true;
+    if (!(player.getName().equals("testing32") || player.getName().equals("OClocky"))) return true;
 
     if (Database.purge()) {
       player.sendMessage("Dropped all tables.");
@@ -60,6 +61,10 @@ public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command
 private void givePointer(@NotNull Player player) {
     ItemStack pointer = itemProperties(TempConfigsStore.pointer, "Pointer", "pointer");
     player.getInventory().addItem(pointer);
+
+  Member member = Member.getMember(player.getUniqueId());
+  if (member == null) return;
+  member.outlineNearbyClaims(TempConfigsStore.selectionRenderRadius);
 }
 
 private void deletePointer(@NotNull Player player) {
@@ -68,6 +73,10 @@ private void deletePointer(@NotNull Player player) {
   if (selections.containsKey(player.getUniqueId())) {
     selections.get(player.getUniqueId()).restore();
   }
+
+  Member member = Member.getMember(player.getUniqueId());
+  if (member == null) return;
+  member.unoutlineClaims();
 }
 
 }

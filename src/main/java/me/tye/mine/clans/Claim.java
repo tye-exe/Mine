@@ -207,6 +207,9 @@ public @NotNull List<Location> getRawOutline() {
   int endY = getY2();
   int endZ = getZ2();
 
+  rawOutline.add(getCornerOne());
+  rawOutline.add(getCornerTwo());
+
 
   //adds the outline for the X blocks
   getBetween(startX, endX).forEach((X) -> {
@@ -256,9 +259,9 @@ public @NotNull List<Location> getOutlineWithin(@NotNull Location firstCorner, @
     int y = location.getBlockY();
     int z = location.getBlockZ();
 
-    if (cornerOne.getBlockX() > x) continue;
-    if (cornerOne.getBlockY() > y) continue;
-    if (cornerOne.getBlockZ() > z) continue;
+    if (cornerOne.getBlockX() >= x) continue;
+    if (cornerOne.getBlockY() >= y) continue;
+    if (cornerOne.getBlockZ() >= z) continue;
 
     if (cornerTwo.getBlockX() < x) continue;
     if (cornerTwo.getBlockY() < y) continue;
