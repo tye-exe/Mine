@@ -59,4 +59,4 @@ Changing the world names will completely **BREAK** claims with this plugin.
 The players are managed using their uuid, so changing your name **won't** have any impact.  
 If you delete the (path to db) then **all** data for clans, & member will **PERMANENTLY** be erased. Do not delete this file. If you wish to delete data see [TODO](https://www.youtube.com/watch?v=dQw4w9WgXcQ).  
 The key {newLine} is used in the config files instead of just putting a new line as to keep everything on the same line when editing the config files, which makes the process easier.  
-If you want to add the symbols '{' or '}' to a lang response you will need to add '\' before typing them. This is because they are used to mark keys so are treated as special characters.
+If you want to add the symbols '{' or '}' to a lang response you will need to add a backslash '\\' before typing them. This is because they are used to mark keys so are treated as special characters.
