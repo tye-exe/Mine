@@ -8,3 +8,4 @@
 
 ## 0.0.3:
 - Users will be warned about issues with missing/invalid lang or config keys.
+- When holding the pointer users will see nearby claim outlines.

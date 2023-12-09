@@ -14,10 +14,12 @@ public enum Lang {
   pointer_missingSelection,
 
   member_alreadyInClan,
+  member_badJoin,
 
   database_noMember,
   database_noClan,
 
+  excepts_fatalError,
   excepts_invalidLangKey,
   excepts_invalidConfigKey,
   excepts_missingLangKey,
@@ -55,6 +57,11 @@ public @NotNull String getResponse() {
   String response = langs.get(this);
 
   assert response != null;
+
+  response = convertKeysToLowerCase(response);
+
+  //always replaces the newLine key with a new line.
+  response = response.replaceAll("\\{"+Key.newLine+"}", "\n");
 
   return response;
 }
@@ -130,6 +137,38 @@ public static void load() {
   }
 
   langs.putAll(userLangs);
+}
+
+/**
+ Converts keys in a response to lowercase.
+ * @param response The response to convert the keys to lowercase within.
+ * @return The response with the keys converted to lowercase.
+ */
+private static @NotNull String convertKeysToLowerCase(@NotNull String response) {
+  char[] responseChars = response.toCharArray();
+
+  boolean setLowerCase = false;
+  for (int i = 0; i < responseChars.length; i++) {
+    char responseChar = responseChars[i];
+
+    //if its the start of a key & not escaped set the following chars to lower case.
+    if (responseChar == '{' && !(i > 0 && responseChars[i-1] == '\\')) {
+      setLowerCase = true;
+      continue;
+    }
+
+    //if its the end of a key & not escaped set do nothing to the following chars.
+    if (responseChar == '}' && !(i > 0 && responseChars[i-1] == '\\')) {
+      setLowerCase = false;
+      continue;
+    }
+
+    if (!setLowerCase) continue;
+
+    responseChars[i] = String.valueOf(responseChar).toLowerCase().charAt(0);
+  }
+
+  return new String(responseChars);
 }
 
 }

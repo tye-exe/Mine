@@ -4,20 +4,29 @@ import me.tye.mine.clans.Claim;
 import me.tye.mine.clans.Clan;
 import me.tye.mine.clans.Member;
 import me.tye.mine.clans.Perm;
+import me.tye.mine.errors.FatalDatabaseException;
+import me.tye.mine.utils.MineCacheMap;
 import me.tye.mine.utils.TempConfigsStore;
+import me.tye.mine.utils.Unloader;
+import org.bukkit.Material;
 import org.codehaus.plexus.util.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.UUID;
+import java.util.*;
+
+import static me.tye.mine.utils.Util.handleFatalException;
 
 public class Database {
+
+public static final Map<UUID, Clan> clansCache = Collections.synchronizedMap(new MineCacheMap<>()); //try & solve these warnings?
+public static final Map<UUID, Claim> claimsCache = Collections.synchronizedMap(new MineCacheMap<>());
+public static final Map<UUID, Perm> permsCache = Collections.synchronizedMap(new MineCacheMap<>());
+public static final Map<UUID, Member> memberCache = Collections.synchronizedMap(new MineCacheMap<>());
+
+
 private static boolean initiated = false;
-
-
 private static Connection dbConnection;
 
 /**
@@ -39,7 +48,8 @@ public static void init() throws SQLException {
         clanID TEXT NOT NULL PRIMARY KEY,
               
         name TEXT NOT NULL,
-        description TEXT NOT NULL
+        description TEXT NOT NULL,
+        renderingOutline TEXT NOT NULL
               
         ) WITHOUT ROWID;
         """;
@@ -93,48 +103,94 @@ public static void init() throws SQLException {
         ) WITHOUT ROWID;
         """;
 
+  String claimedChunks = """
+        CREATE TABLE IF NOT EXISTS claimedChunks (
+        
+        claimID TEXT NOT NULL,
+        chunkKey INTEGER NOT NULL,
+        
+        FOREIGN KEY (claimID) REFERENCES claims (claimID) ON DELETE CASCADE
+        );
+        """;
+
 
   Statement statement = dbConnection.createStatement();
   dbConnection.setAutoCommit(false);
+
   statement.execute(clanTable);
   statement.execute(claimsTable);
   statement.execute(memberTable);
   statement.execute(PermsTable);
+  statement.execute(claimedChunks);
+
   dbConnection.commit();
   dbConnection.setAutoCommit(true);
 
+  Unloader.init();
+
   initiated = true;
+}
+
+/**
+ Closes the connection to the database.<br>
+ The {@link #init()} method should be run to reestablish a new connection.
+ */
+public static void close() {
+  killConnection();
+  dbConnection = null;
+  initiated = false;
 }
 
 /**
  Gets the connection to the database.<br>
  <b>Don't use this method with auto closable. The connection to the database should stay open.</b>
  * @return The connection to the database.
- * @throws SQLException If a connection to the database couldn't be established.
+ * @throws FatalDatabaseException If a connection to the database couldn't be established.
  */
-private static @NotNull Connection getDbConnection() throws SQLException {
-  //Attempts to reconnect to the database if it has lost connection
-  if (dbConnection.isClosed()) {
-    String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath()) + ".db";
+private static @NotNull Connection getDbConnection() throws FatalDatabaseException {
+  try {
+    //Attempts to reconnect to the database if it has lost connection
+    if (dbConnection.isClosed()) {
+      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+      String databaseUrl = "jdbc:sqlite:"+databasePath;
 
-    String databaseUrl = "jdbc:sqlite:" + databasePath;
+      dbConnection = DriverManager.getConnection(databaseUrl);
+    }
 
-    dbConnection = DriverManager.getConnection(databaseUrl);
+    return dbConnection;
+
+  } catch (SQLException e) {
+
+    //If there was an error determining if the database lost connection then try to establish a new connection.
+    try {
+      dbConnection = null;
+
+      String databasePath = FileUtils.removeExtension(TempConfigsStore.database.getAbsolutePath())+".db";
+      String databaseUrl = "jdbc:sqlite:"+databasePath;
+
+      dbConnection = DriverManager.getConnection(databaseUrl);
+      return dbConnection;
+
+    } catch (SQLException ex) {
+      throw handleFatalException(ex);
+    }
+
   }
-
-  return dbConnection;
 }
 
- private static void killConnection() {
+/**
+ Kills the connection to the database.
+ */
+private static void killConnection() {
   try {
-    dbConnection.setAutoCommit(false);
-    dbConnection.commit();
-    dbConnection.close();
-  } catch (SQLException e) {
-    e.printStackTrace();
+    if (!dbConnection.getAutoCommit()) {
+      dbConnection.commit();
+    }
 
-    //TODO: REMOVE
-  }
+    dbConnection.close();
+
+    //Doesn't throw fatal error since this will be called before fatal database errors.
+  } catch (SQLException ignore) {}
 }
 
 /**
@@ -156,9 +212,15 @@ public static boolean purge() {
     statement.execute("DROP TABLE members");
     statement.execute("DROP TABLE perms");
     statement.execute("DROP TABLE claims");
+    statement.execute("DROP TABLE claimedChunks");
 
     newConnection.commit();
     newConnection.close();
+
+    claimsCache.clear();
+    memberCache.clear();
+    clansCache.clear();
+    memberCache.clear();
 
     initiated = false;
     init();
@@ -176,12 +238,18 @@ public static boolean purge() {
  Gets the result of the given query from the database.
  * @param query The given query.
  * @return The result set from the database.
- * @throws SQLException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-private static @NotNull ResultSet getResult(@NotNull String query) throws SQLException {
-  Connection dbConnection = getDbConnection();
-  Statement statement = dbConnection.createStatement();
-  return statement.executeQuery(query);
+private static @NotNull ResultSet getResult(@NotNull String query) throws FatalDatabaseException {
+  try {
+    Connection dbConnection = getDbConnection();
+    Statement statement = dbConnection.createStatement();
+    return statement.executeQuery(query);
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
 }
 
 
@@ -189,12 +257,17 @@ private static @NotNull ResultSet getResult(@NotNull String query) throws SQLExc
  Checks if the database has a response for a query.
  * @param query The given query.
  * @return True if the database responded with a populated result set. False otherwise.
- * @throws SQLException If there was an error querying the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-private static boolean hasResult(@NotNull String query) throws SQLException {
-  ResultSet result = getResult(query);
+private static boolean hasResult(@NotNull String query) throws FatalDatabaseException {
+  try {
+    ResultSet result = getResult(query);
+    return result.next();
 
-  return result.next();
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
 }
 
 /**
@@ -222,38 +295,57 @@ private static @NotNull String createWhere(@NotNull String column, @NotNull Coll
 }
 
 /**
+ Adds a member to the cache.
+ * @param memberID The uuid of the member.
+ */
+public static void cacheMember(@NotNull UUID memberID) {
+  Member member = Database.getMember(memberID);
+  if (member == null) return;
+
+  memberCache.put(memberID, member);
+}
+
+/**
  Checks if a clan with the given UUID already exists.
  * @param clanID The UUID to check.
- * @return True if the clan exists or if there was an error interacting with the database.
+ * @return True if the clan exists.
  */
 public static boolean clanExists(@NotNull UUID clanID) {
+  if (clansCache.containsKey(clanID)) return true;
+
   return exists("clanID", "clans", clanID);
 }
 
 /**
  Checks if a claim with the given UUID already exists.
  * @param claimID The UUID to check.
- * @return True if the claim exists or if there was an error interacting with the database.
+ * @return True if the claim exists.
  */
 public static boolean claimExists(@NotNull UUID claimID) {
+  if (claimsCache.containsKey(claimID)) return true;
+
   return exists("claimID", "claims", claimID);
 }
 
 /**
  Checks if a member with the given UUID already exists.
  * @param memberID The UUID to check.
- * @return True if the member exists or if there was an error interacting with the database.
+ * @return True if the member exists.
  */
 public static boolean memberExists(@NotNull UUID memberID) {
+  if (memberCache.containsKey(memberID)) return true;
+
   return exists("memberID", "members", memberID);
 }
 
 /**
  Checks if a perm with the given UUID already exists.
  * @param permID The UUID to check.
- * @return True if the perm exists or if there was an error interacting with the database.
+ * @return True if the perm exists.
  */
 public static boolean permExists(@NotNull UUID permID) {
+  if (permsCache.containsKey(permID)) return true;
+
   return exists("permID", "perms", permID);
 }
 
@@ -263,29 +355,23 @@ public static boolean permExists(@NotNull UUID permID) {
  * @param column The given column.
  * @param table The given table.
  * @param uuid The given uuid.
- * @return True if the uuid is taken or if there was an error interacting with the database.
+ * @return True if the uuid is taken.
  */
 private static boolean exists(@NotNull String column, @NotNull String table, @NotNull UUID uuid) {
-  try {
-
-    return hasResult("SELECT "+column+" FROM "+table+" WHERE \""+column+"\" == \""+uuid+"\";");
-
-  } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
-    killConnection();
-    return true;
-  }
+  return hasResult("SELECT "+column+" FROM "+table+" WHERE \""+column+"\" == \""+uuid+"\";");
 }
 
 
 /**
  Gets a member from the database.
  * @param memberID The uuid of the member.
- * @return The member, if present. If the member doesn't exist or there was an error, null will be returned.
+ * @return The member with this uuid. If the member doesn't exist null will be returned.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Member getMember(@NotNull UUID memberID) {
+public static @Nullable Member getMember(@NotNull UUID memberID) throws FatalDatabaseException {
   if (!memberExists(memberID)) return null;
+
+  Member member;
 
   try (ResultSet memberData = getResult(
       "SELECT * FROM members WHERE \"memberID\" == \""+memberID+"\";"
@@ -308,23 +394,27 @@ public static @Nullable Member getMember(@NotNull UUID memberID) {
       clanPermID = UUID.fromString(rawClanPermID);
     }
 
-    return new Member(memberID, clanID, clanPermID);
+    member = new Member(memberID, clanID, clanPermID);
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
+
+  memberCache.put(memberID, member);
+  return member;
 }
 
 /**
  Gets a clan from the database.
  * @param clanID The uuid of the clan.
- * @return The clan, if present. If the clan doesn't exist or there was an error, null will be returned.
+ * @return The clan with the given uuid. If the clan doesn't exist null will be returned.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Clan getClan(@NotNull UUID clanID) {
+public static @Nullable Clan getClan(@NotNull UUID clanID) throws FatalDatabaseException {
   if (!clanExists(clanID)) return null;
+
+  Clan clan;
 
   try (ResultSet clanData = getResult(
       "SELECT * FROM clans WHERE \"clanID\" == \""+clanID+"\";"
@@ -334,7 +424,7 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
 
     String clanName = clanData.getString("name");
     String clanDescription = clanData.getString("description");
-
+    Material renderingOutline = Material.valueOf(clanData.getString("renderingOutline").toUpperCase());
 
     //Gets the UUIDS of all the claims
     Collection<UUID> claimIDs = new ArrayList<>();
@@ -357,23 +447,27 @@ public static @Nullable Clan getClan(@NotNull UUID clanID) {
       permIDs.add(UUID.fromString(perms.getString("permID")));
     }
 
-    return new Clan(clanID, clanName, clanDescription, claimIDs ,memberIDs, permIDs);
+    clan = new Clan(clanID, claimIDs ,memberIDs, permIDs, clanName, clanDescription, renderingOutline);
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
+
+  clansCache.put(clanID, clan);
+  return clan;
 }
 
 /**
- Gets a claim from the database.
+ Gets a claim from the database & loads it into the cache.
  * @param claimID The uuid of the claim
- * @return The claim, if present. If the claim doesn't exist or there was an error, null will be returned.
+ * @return The claim with this uuid. If the claim doesn't exist null will be returned.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Claim getClaim(@NotNull UUID claimID) {
+public static @Nullable Claim getClaim(@NotNull UUID claimID) throws FatalDatabaseException {
   if (!claimExists(claimID)) return null;
+
+  Claim claim;
 
   try (ResultSet claimData = getResult(
       "SELECT * FROM claims WHERE \"claimID\" == \""+claimID+"\";"
@@ -382,31 +476,48 @@ public static @Nullable Claim getClaim(@NotNull UUID claimID) {
     claimData.next();
 
     String worldName = claimData.getString("worldName");
-    double X1 = claimData.getDouble("X1");
-    double X2 = claimData.getDouble("X2");
-    double Y1 = claimData.getDouble("Y1");
-    double Y2 = claimData.getDouble("Y2");
-    double Z1 = claimData.getDouble("Z1");
-    double Z2 = claimData.getDouble("Z2");
+    int X1 = claimData.getInt("X1");
+    int X2 = claimData.getInt("X2");
+    int Y1 = claimData.getInt("Y1");
+    int Y2 = claimData.getInt("Y2");
+    int Z1 = claimData.getInt("Z1");
+    int Z2 = claimData.getInt("Z2");
     UUID clanID = UUID.fromString(claimData.getString("clanID"));
 
-    return new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2);
+
+    //Gets all the chunks that this claim is in
+    try (ResultSet chunks = getResult(
+        "SELECT chunkKey FROM claimedChunks WHERE \"claimID\" == \""+claimID+"\""
+    )) {
+
+      HashSet<Long> claimInChunks = new HashSet<>();
+
+      while (chunks.next()) {
+        claimInChunks.add(chunks.getLong("chunkKey"));
+      }
+
+      claim = new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, claimInChunks);
+    }
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
+
+  claimsCache.put(claimID, claim);
+  return claim;
 }
 
 /**
- Gets a perm from the database.
+ Gets a perm from the database & loads it into the cache.
  * @param permId The uuid of the perm to get
- * @return The perm, if present. If the perm doesn't exist or there was an error, null will be returned.
+ * @return The perm with this uuid. If the perm doesn't exist null will be returned.
+ * @throws FatalDatabaseException If there was an error querying the database.
  */
-public static @Nullable Perm getPerm(@NotNull UUID permId) {
+public static @Nullable Perm getPerm(@NotNull UUID permId) throws FatalDatabaseException {
   if (permExists(permId)) return null;
+
+  Perm perm;
 
   try (ResultSet permData = getResult(
       "SELECT * FROM perms WHERE \"permID\" == \""+permId+"\";"
@@ -417,22 +528,26 @@ public static @Nullable Perm getPerm(@NotNull UUID permId) {
     String permName = permData.getString("name");
     String permDescription = permData.getString("description");
 
-    return new Perm(permId, permName, permDescription);
+    perm = new Perm(permId, permName, permDescription);
 
   } catch (SQLException | IllegalArgumentException e) {
-    e.printStackTrace();
-    //TODO: remove this before release.
     killConnection();
-    return null;
+    throw handleFatalException(e);
   }
+
+  permsCache.put(perm.getPermID(), perm);
+  return perm;
 }
 
 /**
- Writes a member to the database.<br>
- <b>This method will overwrite the current entry for a member with this uuid, if it exists.</b> Use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
+ Writes a member to the database & puts it into the cache.<br>
+ You can use {@link #memberExists(UUID)} to check if the member exists before creating a new one.
  * @param memberID The uuid of the member to create.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void createMember(@NotNull UUID memberID) {
+public static void createMember(@NotNull UUID memberID) throws FatalDatabaseException {
+  if (memberExists(memberID)) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(true);
@@ -448,29 +563,34 @@ public static void createMember(@NotNull UUID memberID) {
     statement.execute();
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
+
+  memberCache.put(memberID, new Member(memberID, null, null));
 }
 
 /**
- Writes a clan to the database.<br>
- <b>This method will throw an error if the clan already exists.</b> Use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
- * @param newClan The new clan to create.
+ Writes a clan to the database & puts it into the cache.<br>
+ You can use {@link #clanExists(UUID)} to check if the clan exists before creating a new one.
+ * @param newClan The new clan to write to the database.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void writeClan(@NotNull Clan newClan) {
+public static void createClan(@NotNull Clan newClan) throws FatalDatabaseException {
+  if (clanExists(newClan.getClanID())) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(false);
 
     //create the clan
     PreparedStatement clanCreate = dbConnection.prepareStatement(
-        "INSERT INTO clans (clanID, name, description) VALUES(?,?,?)");
+        "INSERT INTO clans (clanID, name, description, renderingOutline) VALUES(?,?,?,?)");
 
     clanCreate.setString(1, newClan.getClanID().toString());
     clanCreate.setString(2, newClan.getName());
     clanCreate.setString(3, newClan.getDescription());
+    clanCreate.setString(4, newClan.getOutlineMaterial().toString());
 
     clanCreate.executeUpdate();
 
@@ -503,46 +623,122 @@ public static void writeClan(@NotNull Clan newClan) {
     dbConnection.setAutoCommit(true);
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
+
+  clansCache.put(newClan.getClanID(), newClan);
 }
 
-public static void createClaim(@NotNull Claim newClaim) {
+/**
+ Writes a new claim to the database & puts it into the cache.<br>
+ You can use {@link #claimExists(UUID)} to check if the clan exists before creating a new one.
+ * @param newClaim The new claim to write to the database.
+ * @throws FatalDatabaseException If there was an error accessing the database.
+ */
+public static void createClaim(@NotNull Claim newClaim) throws FatalDatabaseException {
+  if (claimExists(newClaim.getClaimID())) return;
+
   try {
     Connection dbConnection = getDbConnection();
-    dbConnection.setAutoCommit(true);
+    dbConnection.setAutoCommit(false);
 
-    PreparedStatement statement = dbConnection.prepareStatement("""
+    PreparedStatement createClaim = dbConnection.prepareStatement("""
         INSERT INTO claims (claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, clanID) VALUES(?,?,?,?,?,?,?,?,?)
         """);
 
-    statement.setString(1, newClaim.getClaimID().toString());
-    statement.setString(2, newClaim.getWorldName());
-    statement.setDouble(3, newClaim.getX1());
-    statement.setDouble(4, newClaim.getX2());
-    statement.setDouble(5, newClaim.getY1());
-    statement.setDouble(6, newClaim.getY2());
-    statement.setDouble(7, newClaim.getZ1());
-    statement.setDouble(8, newClaim.getZ2());
-    statement.setString(9, newClaim.getClanID().toString());
+    createClaim.setString(1, newClaim.getClaimID().toString());
+    createClaim.setString(2, newClaim.getWorldName());
+    createClaim.setDouble(3, newClaim.getX1());
+    createClaim.setDouble(4, newClaim.getX2());
+    createClaim.setDouble(5, newClaim.getY1());
+    createClaim.setDouble(6, newClaim.getY2());
+    createClaim.setDouble(7, newClaim.getZ1());
+    createClaim.setDouble(8, newClaim.getZ2());
+    createClaim.setString(9, newClaim.getClanID().toString());
 
-    statement.executeUpdate();
+    createClaim.executeUpdate();
+
+
+    for (Long chunkKey : newClaim.getChunkKeys()) {
+      PreparedStatement claimedChunks = dbConnection.prepareStatement("""
+        INSERT INTO claimedChunks (claimID, chunkKey) VALUES(?,?)
+        """);
+
+      claimedChunks.setString(1, newClaim.getClaimID().toString());
+      claimedChunks.setLong(2, chunkKey);
+      claimedChunks.executeUpdate();
+    }
+
+    dbConnection.commit();
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO:remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
   }
+
+  claimsCache.put(newClaim.getClaimID(), newClaim);
 }
 
 
 /**
- Updates the database entry for an existing clan.
- * @param updatedClan The clan to update.
+ Updates the database entry & cache for an existing member.<br>
+ You can use {@link #memberExists(UUID)} to check if the member exists before updating them.
+ * @param updatedMember The member to update.
+ * @throws FatalDatabaseException If there was an error accessing the database.
  */
-public static void updateClan(@NotNull Clan updatedClan) {
+public static void updateMember(@NotNull Member updatedMember) throws FatalDatabaseException {
+  if (!memberExists(updatedMember.getMemberID())) return;
+
+  try {
+    Connection dbConnection = getDbConnection();
+
+    PreparedStatement clanUpdate = dbConnection.prepareStatement("""
+            UPDATE members SET
+            clanPermID = ?,
+            clanID = ?,
+            WHERE memberID == ?;
+            """);
+
+
+    UUID clanPermID = updatedMember.getClanPermID();
+    if (clanPermID == null) {
+      clanUpdate.setNull(1, Types.NULL);
+    }
+    else {
+      clanUpdate.setString(1, clanPermID.toString());
+    }
+
+    UUID clanID = updatedMember.getClanID();
+    if (clanID == null) {
+      clanUpdate.setNull(2, Types.NULL);
+    }
+    else {
+      clanUpdate.setString(2, clanID.toString());
+    }
+
+    clanUpdate.setString(3, updatedMember.getMemberID().toString());
+
+    clanUpdate.executeUpdate();
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+
+  memberCache.put(updatedMember.getMemberID(), updatedMember);
+}
+
+
+/**
+ Updates the database entry & cache for an existing clan.<br>
+ You can use {@link #clanExists(UUID)} to check if the clan exists before updating one.
+ * @param updatedClan The clan to update.
+ * @throws FatalDatabaseException If there was an error accessing the database.
+ */
+public static void updateClan(@NotNull Clan updatedClan) throws FatalDatabaseException {
+  if (!clanExists(updatedClan.getClanID())) return;
+
   try {
     Connection dbConnection = getDbConnection();
     dbConnection.setAutoCommit(false);
@@ -551,13 +747,15 @@ public static void updateClan(@NotNull Clan updatedClan) {
     PreparedStatement clanUpdate = dbConnection.prepareStatement("""
             UPDATE clans SET
             name = ?,
-            description = ?
+            description = ?,
+            renderingOutline = ?
             WHERE clanID == ?;
             """);
 
     clanUpdate.setString(1, updatedClan.getName());
     clanUpdate.setString(2, updatedClan.getDescription());
     clanUpdate.setString(3, updatedClan.getClanID().toString());
+    clanUpdate.setString(3, updatedClan.getOutlineMaterial().toString());
 
     clanUpdate.executeUpdate();
 
@@ -621,9 +819,148 @@ public static void updateClan(@NotNull Clan updatedClan) {
     dbConnection.setAutoCommit(true);
 
   } catch (SQLException e) {
-    e.printStackTrace();
-    //TODO: remove when confirmed working.
     killConnection();
+    throw handleFatalException(e);
+  }
+
+  clansCache.put(updatedClan.getClanID(), updatedClan);
+}
+
+/**
+ * @return The chunks keys of every claim.
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull Collection<Long> getChunkKeys() throws FatalDatabaseException {
+  try (ResultSet databaseChunkKeys = getResult(
+      "SELECT DISTINCT (chunkKey) FROM claimedChunks"
+  )) {
+
+    ArrayList<Long> chunkKeys = new ArrayList<>();
+
+    while (databaseChunkKeys.next()) {
+      chunkKeys.add(databaseChunkKeys.getLong("chunkKey"));
+    }
+
+    return chunkKeys;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+}
+
+/**
+ * @param chunkKey The chunk key.
+ * @return Claims that are in the chunk represented by the given chunk key. If the database doesn't contain any chunks with this key then an empty list will be returned
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull List<Claim> getClaims(@NotNull Long chunkKey) throws FatalDatabaseException {
+  try (ResultSet claimIDs = getResult(
+      "SELECT DISTINCT (claimID) FROM claimedChunks WHERE \"chunkKey\" == \""+chunkKey+"\""
+  )) {
+
+    ArrayList<Claim> claims = new ArrayList<>();
+
+    while (claimIDs.next()) {
+      UUID claimID = UUID.fromString(claimIDs.getString("claimID"));
+      claims.add(getClaim(claimID));
+    }
+
+    return claims;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+}
+
+/**
+ * @return All the claims from the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull List<Claim> getClaims() throws FatalDatabaseException {
+  ArrayList<Claim> claims = new ArrayList<>();
+
+  try (ResultSet claimData = getResult(
+      "SELECT * FROM claims"
+  )) {
+
+    //goes through all the claims in the database.
+    while (claimData.next()) {
+
+      String worldName = claimData.getString("worldName");
+      int X1 = claimData.getInt("X1");
+      int X2 = claimData.getInt("X2");
+      int Y1 = claimData.getInt("Y1");
+      int Y2 = claimData.getInt("Y2");
+      int Z1 = claimData.getInt("Z1");
+      int Z2 = claimData.getInt("Z2");
+      UUID clanID = UUID.fromString(claimData.getString("clanID"));
+      UUID claimID = UUID.fromString(claimData.getString("claimID"));
+
+
+      //Gets all the chunks that this claim is in
+      try (ResultSet chunks = getResult(
+          "SELECT chunkKey FROM claimedChunks WHERE \"claimID\" == \""+claimID+"\""
+      )) {
+
+        HashSet<Long> claimInChunks = new HashSet<>();
+
+        while (chunks.next()) {
+          claimInChunks.add(chunks.getLong("chunkKey"));
+        }
+
+        claims.add(new Claim(clanID, claimID, worldName, X1, X2, Y1, Y2, Z1, Z2, claimInChunks));
+      }
+
+    }
+
+    return claims;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
+  }
+}
+
+/**
+ * @return All the members from the database.
+ * @throws FatalDatabaseException If there was an error querying the database.
+ */
+public static @NotNull List<Member> getMembers() throws FatalDatabaseException {
+  ArrayList<Member> members = new ArrayList<>();
+
+  try (ResultSet memberData = getResult(
+      "SELECT * FROM members"
+  )) {
+
+    //goes through all the claims in the database.
+    while (memberData.next()) {
+
+      UUID memberID = UUID.fromString(memberData.getString("memberID"));
+      String rawClanID = memberData.getString("clanID");
+      String rawClanPermID = memberData.getString("clanPermID");
+
+      UUID clanID = null;
+      UUID clanPermID = null;
+
+
+      if (rawClanID != null) {
+        clanID = UUID.fromString(rawClanID);
+      }
+
+      if (rawClanPermID != null) {
+        clanPermID = UUID.fromString(rawClanPermID);
+      }
+
+      members.add(new Member(memberID, clanID, clanPermID));
+    }
+
+    return members;
+
+  } catch (SQLException e) {
+    killConnection();
+    throw handleFatalException(e);
   }
 }
 }
